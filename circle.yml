@@ -6,7 +6,7 @@ machine:
 
 dependencies:
   override:
-    - pip install pylint
+    - pip install pyflakes pylint
 
 test:
   pre:
