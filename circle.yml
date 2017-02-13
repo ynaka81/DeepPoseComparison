@@ -1,0 +1,14 @@
+machine:
+  timezone:
+    Asia/Tokyo
+  python:
+    version: 2.7.6
+
+dependencies:
+  override:
+    - pip install pylint
+
+test:
+  pre:
+    - find -name '*.py' | xargs pyflakes
+    - find -name '*.py' | xargs pylint
