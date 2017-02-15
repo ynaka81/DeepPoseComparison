@@ -4,6 +4,10 @@ machine:
   python:
     version: 2.7.6
 
+general:
+  artifacts:
+    - _build/html
+
 dependencies:
   override:
     - pip install pyflakes pylint
@@ -12,3 +16,5 @@ test:
   pre:
     - find -name '*.py' | xargs pyflakes
     - find -name '*.py' | xargs pylint
+  post:
+    - make html
