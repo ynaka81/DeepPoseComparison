@@ -18,5 +18,4 @@ test:
     - find -name '*.py' | xargs pyflakes
     - find -name '*.py' | xargs pylint
   post:
-    - cd docs
-    - make html
+    - cd docs && make html
