@@ -6,7 +6,7 @@ machine:
 
 general:
   artifacts:
-    - _build/html
+    - docs/_build/html
 
 dependencies:
   override:
