@@ -9,7 +9,7 @@ general:
     - docs/_build/html
 
 dependencies:
-  override:
+  pre:
     - pip install pyflakes pylint
     - pip install sphinx
 
