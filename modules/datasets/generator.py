@@ -110,7 +110,7 @@ class LSPDatasetGenerator(object):
             # load dataset
             joints = self._load_joints(dataset_name)
             # generate dataset
-            for i, joint in enumerate(tqdm(joints), 1):
+            for i, joint in enumerate(tqdm(joints, ascii=True), 1):
                 # load image
                 image_file, image = self._load_image(dataset_name, i)
                 # save cropped image
