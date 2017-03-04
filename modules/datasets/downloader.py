@@ -38,7 +38,7 @@ class LSPDatasetDownloader(object):
         extract_path = self.path
         if dataset_name == 'lspet_dataset':
             extract_path = os.path.join(extract_path, dataset_name)
-        with zipfile.ZipFile(path, "r") as zip_file:
+        with zipfile.ZipFile(path, 'r') as zip_file:
             zip_file.extractall(extract_path)
 
     # pylint: disable=no-self-use

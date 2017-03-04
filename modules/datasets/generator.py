@@ -51,6 +51,16 @@ class LSPDatasetGenerator(object):
             raise FileNotFoundError('{0} is not found.'.format(path))
         return image_file, image
 
+    def _validate_crop_feasibility(self, shape, j_min, j_max):
+        crop = (shape - self.ksize)%self.stride
+        # raise expection when joints in image are too tight to crop
+        if j_min == 0 or j_max >= shape - 1:
+            raise CropFailed('Joints in the image are too tight to crop.')
+        residual = shape - (np.ceil(j_max - j_min) + 3)
+        if residual < crop:
+            raise CropFailed('Joints in the image are too tight to crop.')
+        return crop
+
     def _crop_image(self, image, joint):
         j_min = np.min(joint, 0)
         j_max = np.max(joint, 0)
@@ -59,18 +69,15 @@ class LSPDatasetGenerator(object):
         crop_shape = [0]*4
         # calculate crop value
         for i in range(2):
-            crop = (shape[i] - self.ksize)%self.stride
-            # raise expection when joints in image are too tight to crop
-            residual = shape[i] - (np.ceil(j_max[i] - j_min[i]) + 1)
-            if residual < crop:
-                raise CropFailed('Joints in the image are too tight to crop.')
+            # validate feasibility of cropping
+            crop = self._validate_crop_feasibility(shape[i], j_min[i], j_max[i])
             # crop image in the side which has more margin
-            if shape[i] < j_min[i] + j_max[i]:
+            if shape[i] < int(np.ceil(j_min[i])) + int(np.floor(j_max[i])) + 1:
                 crop_shape[2*i] = min(crop, int(np.floor(j_min[i])) - 1)
-                crop_shape[2*i + 1] = shape[i] - crop - crop_shape[2*i]
+                crop_shape[2*i + 1] = shape[i] - crop + crop_shape[2*i]
             else:
-                crop_shape[2*i + 1] = max(shape[i] - crop, int(np.ceil(j_max[i])) + 1)
-                crop_shape[2*i] = shape[i] - crop - crop_shape[2*i + 1]
+                crop_shape[2*i + 1] = max(shape[i] - crop, int(np.ceil(j_max[i])) + 2)
+                crop_shape[2*i] = crop_shape[2*i + 1] - (shape[i] - crop)
         return image[crop_shape[2]:crop_shape[3], crop_shape[0]:crop_shape[1]]
 
     def _save_image(self, dataset_name, image_file, image):
