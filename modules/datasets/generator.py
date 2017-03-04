@@ -5,6 +5,7 @@ import os
 import cv2
 import numpy as np
 from scipy.io import loadmat
+from tqdm import tqdm
 
 from modules.errors import FileNotFoundError, SaveImageFailed, CropFailed
 
@@ -105,10 +106,11 @@ class LSPDatasetGenerator(object):
     def _generate_datasets(self):
         datasets = {'train': [], 'test': []}
         for dataset_name in self.dataset:
+            print 'Generate dataset from {0}.'.format(dataset_name)
             # load dataset
             joints = self._load_joints(dataset_name)
             # generate dataset
-            for i, joint in enumerate(joints, 1):
+            for i, joint in enumerate(tqdm(joints), 1):
                 # load image
                 image_file, image = self._load_image(dataset_name, i)
                 # save cropped image
