@@ -7,6 +7,7 @@ machine:
 general:
   artifacts:
     - docs/_build/html
+    - cover
 
 dependencies:
   pre:
