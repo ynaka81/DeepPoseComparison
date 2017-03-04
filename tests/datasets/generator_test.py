@@ -42,6 +42,9 @@ class TestLSPDatasetDownloader(unittest.TestCase):
         dataset_name = 'lsp_dataset'
         joints = self.generator._load_joints(dataset_name)
         eq_(joints.shape, (10, 14, 3))
+        correct = np.zeros((10, 14, 3))
+        correct[:, :, 2] = 1
+        ok_((joints == correct).all())
         mock.assert_called_once_with(os.path.join(self.path, dataset_name, 'joints.mat'))
 
     @patch('modules.datasets.generator.loadmat', return_value={'joints':np.zeros((14, 3, 10))})
@@ -49,6 +52,7 @@ class TestLSPDatasetDownloader(unittest.TestCase):
         dataset_name = 'lspet_dataset'
         joints = self.generator._load_joints(dataset_name)
         eq_(joints.shape, (10, 14, 3))
+        ok_((joints == np.zeros((10, 14, 3))).all())
         mock.assert_called_once_with(os.path.join(self.path, dataset_name, 'joints.mat'))
 
     @patch('cv2.imread', return_value=np.zeros((320, 240)))
@@ -187,18 +191,18 @@ class TestLSPDatasetDownloader(unittest.TestCase):
     @patch('modules.datasets.generator.loadmat')
     def test_generate_datasets(self, m1, m2, m3, m4):
         # prepare mock.
-        joints = np.array([[[1, 2, 0], [3, 4, 0]],
-                           [[5, 6, 0], [7, 8, 0]],
+        joints = np.array([[[1, 2, 0], [3, 4, 1]],
+                           [[5, 6, 1], [7, 8, 0]],
                            [[0, 0, 0], [1, 1, 0]]])
-        m1.side_effect = [{'joints': joints.transpose(2, 1, 0)},
-                          {'joints': joints.transpose(1, 2, 0)}]
+        m1.side_effect = [{'joints': joints.transpose(2, 1, 0).copy()},
+                          {'joints': joints.transpose(1, 2, 0).copy()}]
         # test case.
         datasets = self.generator._generate_datasets()
         eq_(datasets['test'], [])
-        train = ['{0},1,2,0,3,4,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),
-                 '{0},5,6,0,7,8,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0002.jpg')),
-                 '{0},1,2,0,3,4,0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00001.jpg')),
-                 '{0},5,6,0,7,8,0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00002.jpg'))]
+        train = ['{0},1,2,1,3,4,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),
+                 '{0},5,6,0,7,8,1\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0002.jpg')),
+                 '{0},1,2,0,3,4,1\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00001.jpg')),
+                 '{0},5,6,1,7,8,0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00002.jpg'))]
         eq_(datasets['train'], train)
 
     @patch('modules.datasets.generator.open')
@@ -220,18 +224,18 @@ class TestLSPDatasetDownloader(unittest.TestCase):
     @patch('modules.datasets.generator.loadmat')
     def test_generate(self, m1, m2, m3, m4, m5):
         # prepare mock.
-        joints = np.array([[[1, 2, 0], [3, 4, 0]],
+        joints = np.array([[[1, 2, 0], [3, 4, 1]],
                            [[5, 6, 0], [12, 13, 0]],
-                           [[5, 6, 0], [7, 8, 0]]])
-        m1.side_effect = [{'joints': joints.transpose(2, 1, 0)},
-                          {'joints': joints.transpose(1, 2, 0)}]
+                           [[5, 6, 1], [7, 8, 0]]])
+        m1.side_effect = [{'joints': joints.transpose(2, 1, 0).copy()},
+                          {'joints': joints.transpose(1, 2, 0).copy()}]
         # test case.
         self.generator.generate()
         eq_(m5.call_args_list,
             [((os.path.join(self.output, 'test'), 'w'),),
              ((os.path.join(self.output, 'train'), 'w'),)])
-        train = [(('{0},1,2,0,3,4,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),),),
-                 (('{0},5,6,0,7,8,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0003.jpg')),),),
-                 (('{0},1,2,0,3,4,0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00001.jpg')),),),
-                 (('{0},5,6,0,7,8,0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00003.jpg')),),)]
+        train = [(('{0},1,2,1,3,4,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),),),
+                 (('{0},5,6,0,7,8,1\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0003.jpg')),),),
+                 (('{0},1,2,0,3,4,1\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00001.jpg')),),),
+                 (('{0},5,6,1,7,8,0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00003.jpg')),),)]
         eq_(m5.return_value.write.call_args_list, train)

@@ -37,6 +37,7 @@ class LSPDatasetGenerator(object):
         joints = loadmat(os.path.join(self.path, dataset_name, 'joints.mat'))['joints']
         if dataset_name == 'lsp_dataset':
             joints = joints.transpose(2, 1, 0)
+            joints[:, :, 2] = np.logical_not(joints[:, :, 2]).astype(int)
         else:
             joints = joints.transpose(2, 0, 1)
         return joints
