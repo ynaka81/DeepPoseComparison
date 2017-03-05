@@ -7,12 +7,12 @@ from mock import patch
 import numpy as np
 from PIL import Image
 
-from modules.dataset_indexing import PoseDataset
+from modules.dataset_indexing.chainer import PoseDataset
 
 
 class TestPoseDatasetConstructure(unittest.TestCase):
 
-    @patch('modules.dataset_indexing.pose_dataset.open')
+    @patch('modules.dataset_indexing.chainer.pose_dataset.open')
     def test_load_dataset(self, mock):
         # prepare mock.
         mock.return_value = ['image1.png,1,2,0,3,4,1\n',
@@ -33,7 +33,7 @@ class TestPoseDatasetConstructure(unittest.TestCase):
 
 class TestPoseDataset(unittest.TestCase):
 
-    @patch('modules.dataset_indexing.pose_dataset.open')
+    @patch('modules.dataset_indexing.chainer.pose_dataset.open')
     def setUp(self, mock):
         # prepare mock.
         mock.return_value = ['image1.png,1,2,0,3,4,1,5,6,0\n',
