@@ -20,12 +20,16 @@ class TestPoseDatasetConstructure(unittest.TestCase):
         # test.
         dataset = PoseDataset('test_data')
         eq_(dataset.images, ['image1.png', 'image2.png'])
-        correct = [np.matrix([[1, 2, 0],
-                              [3, 4, 1]], dtype=np.float32),
-                   np.matrix([[5, 6, 1],
-                              [7, 8, 0]], dtype=np.float32)]
+        correct = [np.array([[1, 2],
+                              [3, 4]], dtype=np.float32),
+                   np.array([[5, 6],
+                              [7, 8]], dtype=np.float32)]
         for p, c in zip(dataset.poses, correct):
             ok_((p == c).all())
+        correct = [np.array([0, 1], dtype=np.int32),
+                   np.array([1, 0], dtype = np.int32)]
+        for v, c in zip(dataset.visibilities, correct):
+            ok_((v == c).all())
 
 class TestPoseDataset(unittest.TestCase):
 
@@ -48,15 +52,15 @@ class TestPoseDataset(unittest.TestCase):
 
     def test_random_crop(self):
         image = np.zeros((3, 19, 15))
-        pose = np.array([[3, 5, 0],
-                         [9, 14, 0]])
+        pose = np.array([[3, 5],
+                         [9, 14]])
         for i in range(20):
             image_i, pose_i = self.dataset._random_crop(image, pose)
             _, h, w = image_i.shape
             shape = np.array((w, h))
             ok_((((shape - self.ksize)%self.stride) == 0).all())
-            p_min = np.min(pose_i[:, :2], 0)
-            p_max = np.max(pose_i[:, :2], 0)
+            p_min = np.min(pose_i, 0)
+            p_max = np.max(pose_i, 0)
             ok_((p_min >= 1).all())
             ok_((p_max < shape - 1).all())
 
@@ -92,7 +96,7 @@ class TestPoseDataset(unittest.TestCase):
         for flag in (True, False):
             self.dataset.data_augmentation = flag
             for i in range(len(self.dataset)):
-                image, pose = self.dataset.get_example(i)
+                image, pose, visibility = self.dataset.get_example(i)
                 # test for image.
                 _, h, w = image.shape
                 shape = np.array((h, w))

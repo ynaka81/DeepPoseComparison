@@ -23,7 +23,7 @@ class PoseDataset(dataset.DatasetMixin):
         self.ksize = ksize
         self.stride = stride
         # load dataset.
-        self.images, self.poses = self._load_dataset()
+        self.images, self.poses, self.visibilities = self._load_dataset()
 
     def __len__(self):
         return len(self.images)
@@ -32,24 +32,27 @@ class PoseDataset(dataset.DatasetMixin):
         """ Returns the i-th example. """
         image = self._read_image(self.images[i])
         pose = self.poses[i]
+        visibility = self.visibilities[i]
         # data augumentation.
         if self.data_augmentation:
             image, pose = self._random_crop(image, pose)
             image = self._random_noise(image)
         # scale to [0, 1].
         image /= 255.
-        return image, pose
+        return image, pose, visibility
 
     def _load_dataset(self):
         images = []
         poses = []
+        visibilities = []
         for line in open(self.path):
             line_split = line[:-1].split(',')
             images.append(line_split[0])
-            x = np.array(line_split[1:], dtype=np.float32)
+            x = np.array(line_split[1:])
             x = x.reshape(-1, 3)
-            poses.append(x)
-        return images, poses
+            poses.append(x[:, :2].astype(np.float32))
+            visibilities.append(x[:, 2].astype(np.int32))
+        return images, poses, visibilities
 
     @staticmethod
     def _read_image(path):
@@ -77,7 +80,7 @@ class PoseDataset(dataset.DatasetMixin):
             crop_max[i] = shape[i] - (random_all - crop_min[i])
         image = image[:, crop_min[1]:crop_max[1], crop_min[0]:crop_max[0]]
         # modify pose according to the cropping.
-        pose = pose - np.array(crop_min + [0])
+        pose = pose - crop_min
         # return augmented data.
         return image, pose
 
