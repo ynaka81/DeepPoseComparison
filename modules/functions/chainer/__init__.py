@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """ Loss function module. """
 
-from modules.functions.chainer.mean_squared_error import MeanSquaredError
+from modules.functions.chainer.mean_squared_error import mean_squared_error
 
 
-__all__ = ['MeanSquaredError']
+__all__ = ['mean_squared_error']
