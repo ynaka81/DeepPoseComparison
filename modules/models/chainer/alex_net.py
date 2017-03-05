@@ -30,6 +30,7 @@ class AlexNet(chainer.Chain):
             fc7=L.Linear(None, 4096),
             fc8=L.Linear(None, Nj*2),
         )
+        self.Nj = Nj
         self.use_visibility = use_visibility
         self.train = True
 
@@ -53,10 +54,10 @@ class AlexNet(chainer.Chain):
         h = F.dropout(F.relu(self.fc6(h)), train=self.train)
         h = F.dropout(F.relu(self.fc7(h)), train=self.train)
         h = self.fc8(h)
-        return h
+        return F.reshape(h, (-1, self.Nj, 2))
 
     def __call__(self, image, x, v):
         y = self.predict(image)
         loss = mean_squared_error(y, x, v, use_visibility=self.use_visibility)
-        chainer.report({"loss": loss}, self)
+        chainer.report({'loss': loss}, self)
         return loss
