@@ -51,7 +51,7 @@ class PoseDataset(dataset.DatasetMixin):
             x = np.array(line_split[1:])
             x = x.reshape(-1, 3)
             poses.append(x[:, :2].astype(np.float32))
-            visibilities.append(x[:, 2].astype(np.int32))
+            visibilities.append(x[:, 2].reshape(-1, 1).astype(np.int32))
         return images, poses, visibilities
 
     @staticmethod

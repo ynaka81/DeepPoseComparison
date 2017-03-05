@@ -26,8 +26,8 @@ class TestPoseDatasetConstructure(unittest.TestCase):
                               [7, 8]], dtype=np.float32)]
         for p, c in zip(dataset.poses, correct):
             ok_((p == c).all())
-        correct = [np.array([0, 1], dtype=np.int32),
-                   np.array([1, 0], dtype = np.int32)]
+        correct = [np.array([[0], [1]], dtype=np.int32),
+                   np.array([[1], [0]], dtype = np.int32)]
         for v, c in zip(dataset.visibilities, correct):
             ok_((v == c).all())
 
@@ -36,8 +36,8 @@ class TestPoseDataset(unittest.TestCase):
     @patch('modules.dataset_indexing.pose_dataset.open')
     def setUp(self, mock):
         # prepare mock.
-        mock.return_value = ['image1.png,1,2,0,3,4,1\n',
-                             'image2.png,5,6,1,7,8,0\n']
+        mock.return_value = ['image1.png,1,2,0,3,4,1,5,6,0\n',
+                             'image2.png,7,8,1,9,8,0,7,6,1\n']
         # set up.
         self.path = 'test_data'
         self.ksize = 11
@@ -106,7 +106,9 @@ class TestPoseDataset(unittest.TestCase):
                 if not flag:
                     eq_(image.shape, (3, 75, 55))
                 # test for pose.
-                p_min = np.min(pose[:, :2], 0)
-                p_max = np.max(pose[:, :2], 0)
+                p_min = np.min(pose, 0)
+                p_max = np.max(pose, 0)
                 ok_((p_min >= 1).all())
                 ok_((p_max < shape - 1).all())
+                # test for visibility.
+                eq_(visibility.shape, (3, 1))
