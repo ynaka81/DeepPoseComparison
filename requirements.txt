@@ -6,4 +6,5 @@ scipy==0.18.1
 wget==3.2
 zipfile2==0.0.12
 tqdm==4.11.2
+chainer==1.19.0
 Pillow==3.4.1
