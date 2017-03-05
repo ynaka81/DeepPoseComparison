@@ -13,12 +13,14 @@ class PoseDataset(dataset.DatasetMixin):
     Args:
         path (str): A path to dataset.
         data_augmentation (bool): True for data augmentation.
+        ksize (int): Size of filter.
         stride (int): Stride of filter applications.
     """
 
-    def __init__(self, path, data_augmentation=True, stride=4):
+    def __init__(self, path, data_augmentation=True, ksize=11, stride=4):
         self.path = path
         self.data_augmentation = data_augmentation
+        self.ksize = ksize
         self.stride = stride
         # load dataset.
         self.images, self.poses = self._load_dataset()
@@ -44,8 +46,8 @@ class PoseDataset(dataset.DatasetMixin):
         for line in open(self.path):
             line_split = line[:-1].split(',')
             images.append(line_split[0])
-            x = map(int, line_split[1:])
-            x = np.matrix(x).reshape(-1, 3)
+            x = np.array(line_split[1:], dtype=np.float32)
+            x = x.reshape(-1, 3)
             poses.append(x)
         return images, poses
 
@@ -61,17 +63,18 @@ class PoseDataset(dataset.DatasetMixin):
     def _random_crop(self, image, pose):
         p_min = np.min(pose, 0)
         p_max = np.max(pose, 0)
-        h, w, _ = image.shape
+        _, h, w = image.shape
         shape = (w, h)
         crop_min = [0, 0]
         crop_max = [0, 0]
         # crop image.
         for i in range(2):
-            residual = shape - (np.ceil(p_max[i] - p_min[i]) + 3)
-            crop_residual = residual/self.stride*self.stride
-            random_all = random.randint(0, crop_residual)
-            crop_min[i] = random.randint(0, p_min[i])
-            crop_max[i] = random_all - crop_min[i]
+            residual = shape[i] - max(np.ceil(p_max[i] - p_min[i]) + 3, self.ksize)
+            random_all = random.randint(0, residual)/self.stride*self.stride
+            crop_min[i] = random.randint(
+                max(0, int(np.floor(p_max[i])) - (shape[i] - random_all) + 2),
+                min(int(np.floor(p_min[i])) - 1, random_all))
+            crop_max[i] = shape[i] - (random_all - crop_min[i])
         image = image[:, crop_min[1]:crop_max[1], crop_min[0]:crop_max[0]]
         # modify pose according to the cropping.
         pose = pose - np.array(crop_min + [0])
