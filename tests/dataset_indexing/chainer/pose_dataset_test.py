@@ -15,8 +15,8 @@ class TestPoseDatasetConstructure(unittest.TestCase):
     @patch('modules.dataset_indexing.chainer.pose_dataset.open')
     def test_load_dataset(self, mock):
         # prepare mock.
-        mock.return_value = ['image1.png,1,2,0,3,4,1\n',
-                             'image2.png,5,6,1,7,8,0\n']
+        mock.return_value = ['image1.png,1.0,2.0,0.0,3.0,4.0,1.0\n',
+                             'image2.png,5.0,6.0,1.0,7.0,8.0,0.0\n']
         # test.
         dataset = PoseDataset('test_data')
         eq_(dataset.images, ['image1.png', 'image2.png'])
@@ -36,8 +36,8 @@ class TestPoseDataset(unittest.TestCase):
     @patch('modules.dataset_indexing.chainer.pose_dataset.open')
     def setUp(self, mock):
         # prepare mock.
-        mock.return_value = ['image1.png,1,2,0,3,4,1,5,6,0\n',
-                             'image2.png,7,8,1,9,8,0,7,6,1\n']
+        mock.return_value = ['image1.png,1.0,2.0,0.0,3.0,4.0,1.0,5.0,6.0,0.0\n',
+                             'image2.png,7.0,8.0,1.0,9.0,8.0,0.0,7.0,6.0,1.0\n']
         # set up.
         self.path = 'test_data'
         self.ksize = 11
