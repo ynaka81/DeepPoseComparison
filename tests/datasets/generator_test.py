@@ -143,14 +143,16 @@ class TestLSPDatasetDownloader(unittest.TestCase):
         ok_((moved_joint == correct).all())
 
     def test_validate(self):
-        joint = np.array([[20, 30, 1], [40, 50, 0]])
+        joint = np.array([[20, 30, 1], [40, 50, 1]])
         eq_(self.generator._validate(joint), True)
-        joint = np.array([[0, 30, 1], [40, 50, 0]])
+        joint = np.array([[0, 30, 1], [40, 50, 1]])
         eq_(self.generator._validate(joint), False)
-        joint = np.array([[20, 30, 1], [40, 256, 0]])
+        joint = np.array([[20, 30, 1], [40, 256, 1]])
         eq_(self.generator._validate(joint), False)
-        joint = np.array([[10, 30, 1], [237, 40, 0]])
+        joint = np.array([[10, 30, 1], [237, 40, 1]])
         eq_(self.generator._validate(joint), False)
+        joint = np.array([[20, 30, 1], [-40, -50, 0]])
+        eq_(self.generator._validate(joint), True)
 
     @patch('cv2.imwrite', return_value=True)
     @patch('os.path.isdir', return_value=True)
@@ -207,7 +209,7 @@ class TestLSPDatasetDownloader(unittest.TestCase):
         # prepare mock.
         joints = np.array([[[50, 80, 0], [150, 260, 1]],
                            [[100, 200, 1], [120, 280, 0]],
-                           [[40, 10, 0], [120, 290, 0]]])
+                           [[40, 10, 0], [120, 290, 1]]])
         m1.side_effect = [{'joints': joints.transpose(2, 1, 0).copy()},
                           {'joints': joints.transpose(1, 2, 0).copy()}]
         # test case.
@@ -239,7 +241,7 @@ class TestLSPDatasetDownloader(unittest.TestCase):
     def test_generate(self, m1, m2, m3, m4, m5):
         # prepare mock.
         joints = np.array([[[50, 80, 0], [150, 260, 1]],
-                           [[40, 10, 0], [120, 290, 0]],
+                           [[40, 10, 0], [120, 290, 1]],
                            [[100, 200, 1], [120, 280, 0]]])
         m1.side_effect = [{'joints': joints.transpose(2, 1, 0).copy()},
                           {'joints': joints.transpose(1, 2, 0).copy()}]

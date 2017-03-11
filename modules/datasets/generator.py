@@ -79,13 +79,17 @@ class LSPDatasetGenerator(object):
         return cropped_image, moved_joint
 
     def _validate(self, joint):
-        joint_xy = joint[:, :2]
+        visibility = joint[:, 2].astype(bool)
+        joint_xy = joint[visibility, :2]
         small_side_condition = (joint_xy > 0).all()
         big_side_condition = (joint_xy < self.image_size).all()
-        j_min = np.min(joint_xy, 0)
-        j_max = np.max(joint_xy, 0)
-        j_diff = j_max - j_min
-        crop_size_condition = (j_diff < self.crop_size).all()
+        if joint_xy.size > 0:
+            j_min = np.min(joint_xy, 0)
+            j_max = np.max(joint_xy, 0)
+            j_diff = j_max - j_min
+            crop_size_condition = (j_diff < self.crop_size).all()
+        else:
+            crop_size_condition = True
         return small_side_condition and big_side_condition and crop_size_condition
 
     def _save_image(self, dataset_name, image_file, image):
