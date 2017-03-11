@@ -13,15 +13,13 @@ class PoseDataset(dataset.DatasetMixin):
     Args:
         path (str): A path to dataset.
         data_augmentation (bool): True for data augmentation.
-        ksize (int): Size of filter.
-        stride (int): Stride of filter applications.
+        crop_size (int): Size of cropping for DNN training.
     """
 
-    def __init__(self, path, data_augmentation=True, ksize=11, stride=4):
+    def __init__(self, path, data_augmentation=True, crop_size=227):
         self.path = path
         self.data_augmentation = data_augmentation
-        self.ksize = ksize
-        self.stride = stride
+        self.crop_size = crop_size
         # load dataset.
         self.images, self.poses, self.visibilities = self._load_dataset()
 
@@ -33,9 +31,10 @@ class PoseDataset(dataset.DatasetMixin):
         image = self._read_image(self.images[i])
         pose = self.poses[i]
         visibility = self.visibilities[i]
-        # data augumentation.
+        # crop image.
+        image, pose = self._crop_image(image, pose)
+        # add random noise for data augumentation.
         if self.data_augmentation:
-            image, pose = self._random_crop(image, pose)
             image = self._random_noise(image)
         # scale to [0, 1].
         image /= 255.
@@ -63,26 +62,22 @@ class PoseDataset(dataset.DatasetMixin):
             f.close()
         return image.transpose(2, 0, 1)
 
-    def _random_crop(self, image, pose):
-        p_min = np.min(pose, 0)
-        p_max = np.max(pose, 0)
-        _, h, w = image.shape
-        shape = (w, h)
-        crop_min = [0, 0]
-        crop_max = [0, 0]
-        # crop image.
+    def _crop_image(self, image, pose):
+        _, height, width = image.shape
+        shape = (width, height)
+        crop_shape = [0, 0, 0, 0]
+        # crop on a joint center
         for i in range(2):
-            residual = shape[i] - max(np.ceil(p_max[i] - p_min[i]) + 3, self.ksize)
-            random_all = random.randint(0, residual)/self.stride*self.stride
-            crop_min[i] = random.randint(
-                max(0, int(np.floor(p_max[i])) - (shape[i] - random_all) + 2),
-                min(int(np.floor(p_min[i])) - 1, random_all))
-            crop_max[i] = shape[i] - (random_all - crop_min[i])
-        image = image[:, crop_min[1]:crop_max[1], crop_min[0]:crop_max[0]]
-        # modify pose according to the cropping.
-        pose = pose - crop_min
-        # return augmented data.
-        return image, pose
+            j_c = np.mean(pose[:, i])
+            if self.data_augmentation:
+                crop_shape[2*i] = random.randint(0, shape[i] - self.crop_size)
+            else:
+                crop_shape[2*i] = max(0, int(j_c - float(self.crop_size)/2))
+            crop_shape[2*i + 1] = min(shape[i], crop_shape[2*i] + self.crop_size)
+            crop_shape[2*i] -= self.crop_size - (crop_shape[2*i + 1] - crop_shape[2*i])
+        cropped_image = image[:, crop_shape[2]:crop_shape[3], crop_shape[0]:crop_shape[1]]
+        moved_pose = pose - (crop_shape[0], crop_shape[2])
+        return cropped_image, moved_pose
 
     @staticmethod
     def _random_noise(image):

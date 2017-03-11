@@ -40,9 +40,7 @@ class TestPoseDataset(unittest.TestCase):
                              'image2.png,7.0,8.0,1.0,9.0,8.0,0.0,7.0,6.0,1.0\n']
         # set up.
         self.path = 'test_data'
-        self.ksize = 11
-        self.stride = 4
-        self.dataset = PoseDataset(self.path, ksize=self.ksize, stride=self.stride)
+        self.dataset = PoseDataset(self.path)
 
     @patch('PIL.Image.open', return_value=Image.new('RGB', (55, 75)))
     def test_read_image(self, mock):
@@ -50,19 +48,42 @@ class TestPoseDataset(unittest.TestCase):
         eq_(image.dtype, np.float32)
         eq_(image.shape, (3, 75, 55))
 
-    def test_random_crop(self):
-        image = np.zeros((3, 19, 15))
-        pose = np.array([[3, 5],
-                         [9, 14]])
+    def test_crop_image(self):
+        self.dataset.data_augmentation = False
+        image = np.arange(256*256*3).reshape((3, 256, 256))
+        # crop on a pose center
+        pose = np.array([[108, 50], [148, 180]])
+        cropped_image, moved_pose = self.dataset._crop_image(image, pose)
+        eq_(cropped_image.shape, (3, 227, 227))
+        ok_((cropped_image == image[:, 1:228, 14:241]).all())
+        correct = np.array([[94, 49], [134, 179]])
+        ok_((moved_pose == correct).all())
+        # left side is too tight
+        pose = np.array([[40, 50], [160, 180]])
+        cropped_image, moved_pose = self.dataset._crop_image(image, pose)
+        eq_(cropped_image.shape, (3, 227, 227))
+        ok_((cropped_image == image[:, 1:228, :227]).all())
+        correct = np.array([[40, 49], [160, 179]])
+        ok_((moved_pose == correct).all())
+        # right side is too tight
+        pose = np.array([[100, 50], [200, 180]])
+        cropped_image, moved_pose = self.dataset._crop_image(image, pose)
+        eq_(cropped_image.shape, (3, 227, 227))
+        ok_((cropped_image == image[:, 1:228, 29:]).all())
+        correct = np.array([[71, 49], [171, 179]])
+        ok_((moved_pose == correct).all())
+
+    def test_crop_image_data_augmentation(self):
+        self.dataset.data_augmentation = False
+        image = np.zeros((3, 256, 256))
+        pose = np.zeros((2, 2))
         for i in range(20):
-            image_i, pose_i = self.dataset._random_crop(image, pose)
-            _, h, w = image_i.shape
-            shape = np.array((w, h))
-            ok_((((shape - self.ksize)%self.stride) == 0).all())
-            p_min = np.min(pose_i, 0)
-            p_max = np.max(pose_i, 0)
-            ok_((p_min >= 1).all())
-            ok_((p_max < shape - 1).all())
+            cropped_image, _ = self.dataset._crop_image(image, pose)
+            eq_(cropped_image.shape, (3, 227, 227))
+            # p_min = np.min(pose_i, 0)
+            # p_max = np.max(pose_i, 0)
+            # ok_((p_min >= 1).all())
+            # ok_((p_max < shape - 1).all())
 
     def _calculate_image_eigen(self, image):
         C = np.cov(np.reshape(image, (3, -1)))
@@ -88,27 +109,24 @@ class TestPoseDataset(unittest.TestCase):
     @patch('PIL.Image.open')
     def test_get_example(self, mock):
         # prepare mock.
-        mock.side_effect = [Image.new('RGB', (55, 75)),
-                            Image.new('RGB', (11, 11)),
-                            Image.new('RGB', (55, 75)),
-                            Image.new('RGB', (55, 75))]
+        shape = (256, 256)
+        mock.side_effect = [Image.new('RGB', shape),
+                            Image.new('RGB', shape),
+                            Image.new('RGB', shape),
+                            Image.new('RGB', shape)]
         # test.
         for flag in (True, False):
             self.dataset.data_augmentation = flag
             for i in range(len(self.dataset)):
                 image, pose, visibility = self.dataset.get_example(i)
                 # test for image.
-                _, h, w = image.shape
-                shape = np.array((h, w))
-                ok_((((shape - self.ksize)%self.stride) == 0).all())
+                eq_(image.shape, (3, 227, 227))
                 self.assertGreaterEqual(np.min(image), 0)
                 self.assertLessEqual(np.max(image), 1)
-                if not flag:
-                    eq_(image.shape, (3, 75, 55))
-                # test for pose.
-                p_min = np.min(pose, 0)
-                p_max = np.max(pose, 0)
-                ok_((p_min >= 1).all())
-                ok_((p_max < shape - 1).all())
+                # # test for pose.
+                # p_min = np.min(pose, 0)
+                # p_max = np.max(pose, 0)
+                # ok_((p_min >= 1).all())
+                # ok_((p_max < shape - 1).all())
                 # test for visibility.
                 eq_(visibility.shape, (3, 1))

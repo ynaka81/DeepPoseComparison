@@ -116,7 +116,7 @@ class TestLSPDatasetDownloader(unittest.TestCase):
         ok_((cropped_image == image[:, :256, :]).all())
         correct = np.array([[20, 30, 0], [40, 50, 0]])
         ok_((moved_joint == correct).all())
-        # left side is too tight
+        # right side is too tight
         joint = np.array([[200, 30, 0], [400, 50, 0]])
         cropped_image, moved_joint = self.generator._crop_image(image, joint)
         eq_(cropped_image.shape, (256, 256, 3))
