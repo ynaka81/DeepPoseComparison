@@ -124,10 +124,11 @@ class TrainPoseNet(object):
         trainer.extend(extensions.snapshot(
             filename="epoch-{.updater.epoch}.iter"), trigger=resume_interval)
         # show log
-        trainer.extend(extensions.LogReport(trigger=val_interval))
-        trainer.extend(extensions.observe_lr(), trigger=val_interval)
+        log_interval = (10, "iteration")
+        trainer.extend(extensions.LogReport(trigger=log_interval))
+        trainer.extend(extensions.observe_lr(), trigger=log_interval)
         trainer.extend(extensions.PrintReport(
-            ['epoch', 'main/loss', 'validation/main/loss', 'lr']), trigger=val_interval)
+            ['epoch', 'main/loss', 'validation/main/loss', 'lr']), trigger=log_interval)
         trainer.extend(extensions.ProgressBar(update_interval=10))
         # start training
         if self.resume:
