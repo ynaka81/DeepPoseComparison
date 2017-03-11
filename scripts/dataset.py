@@ -14,9 +14,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generating LSP dataset for comparison \
         between chainer and pytorch about implementing DeepPose.")
-    parser.add_argument("--ksize", "-k", type=int, default=11, help="Size of filter.")
     parser.add_argument(
-        "--stride", "-s", type=int, default=4, help="Stride of filter applications.")
+        "--image_size", "-S", type=int, default=256, help="Size of output image.")
+    parser.add_argument(
+        "--crop_size", "-C", type=int, default=227, help="Size of cropping for DNN training.")
     parser.add_argument(
         "--path", "-p", type=str, default="orig_data", help="A path to download datasets.")
     parser.add_argument(
@@ -24,7 +25,7 @@ def main():
     # main process
     args = parser.parse_args()
     downloader = LSPDatasetDownloader(args.path)
-    generator = LSPDatasetGenerator(args.ksize, args.stride, args.path, args.output)
+    generator = LSPDatasetGenerator(args.image_size, args.crop_size, args.path, args.output)
     downloader.download()
     generator.generate()
 

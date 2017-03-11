@@ -7,7 +7,7 @@ import numpy as np
 from scipy.io import loadmat
 from tqdm import tqdm
 
-from modules.errors import FileNotFoundError, SaveImageFailed, CropFailed
+from modules.errors import FileNotFoundError, SaveImageFailed
 
 
 class LSPDatasetGenerator(object):
@@ -15,20 +15,20 @@ class LSPDatasetGenerator(object):
     'Leeds Sports Pose Dataset' and 'Leeds Sports Pose Extended Training Dataset'
 
     Args:
-        ksize (int): Size of filter.
-        stride (int): Stride of filter applications.
+        image_size (int): Size of output image.
+        crop_size (int): Size of cropping for DNN training.
         path (str): A path to download datasets.
         output (str): An output path for generated datasets.
     """
 
-    def __init__(self, ksize=11, stride=4, path='orig_data', output='data'):
+    def __init__(self, image_size=256, crop_size=227, path='orig_data', output='data'):
         """ Constructor of generator. """
         try:
             os.makedirs(os.path.join(output, 'images'))
         except OSError:
             pass
-        self.ksize = ksize
-        self.stride = stride
+        self.image_size = image_size
+        self.crop_size = crop_size
         self.path = path
         self.output = output
         self.dataset = ['lsp_dataset', 'lspet_dataset']
@@ -53,34 +53,35 @@ class LSPDatasetGenerator(object):
             raise FileNotFoundError('{0} is not found.'.format(path))
         return image_file, image
 
-    def _validate_crop_feasibility(self, shape, j_min, j_max):
-        crop = (shape - self.ksize)%self.stride
-        # raise expection when joints in image are too tight to crop
-        if j_min == 0 or j_max >= shape - 1:
-            raise CropFailed('Joints in the image are too tight to crop.')
-        residual = shape - (np.ceil(j_max - j_min) + 3)
-        if residual < crop:
-            raise CropFailed('Joints in the image are too tight to crop.')
-        return crop
+    def _scale_image(self, image, joint):
+        height, width, _ = image.shape
+        # scale image so that smaller side is equal to desired image size
+        small_side = min(width, height)
+        ratio = float(self.image_size)/small_side
+        return cv2.resize(image, None, fx=ratio, fy=ratio), joint*(ratio, ratio, 1)
 
     def _crop_image(self, image, joint):
-        j_min = np.min(joint, 0)
-        j_max = np.max(joint, 0)
-        height, width, _ = image.shape
-        shape = (width, height)
-        crop_shape = [0]*4
-        # calculate crop value
-        for i in range(2):
-            # validate feasibility of cropping
-            crop = self._validate_crop_feasibility(shape[i], j_min[i], j_max[i])
-            # crop image in the side which has more margin
-            if shape[i] < int(np.ceil(j_min[i])) + int(np.floor(j_max[i])) + 1:
-                crop_shape[2*i] = min(crop, int(np.floor(j_min[i])) - 1)
-                crop_shape[2*i + 1] = shape[i] - crop + crop_shape[2*i]
-            else:
-                crop_shape[2*i + 1] = max(shape[i] - crop, int(np.ceil(j_max[i])) + 2)
-                crop_shape[2*i] = crop_shape[2*i + 1] - (shape[i] - crop)
-        return image[crop_shape[2]:crop_shape[3], crop_shape[0]:crop_shape[1]]
+        # crop bigger side
+        index = 1 - np.argmax(image.shape)
+        # crop on a joint center
+        j_c = np.mean(joint[:, index])
+        left_top = max(0, int(j_c - float(self.image_size)/2))
+        right_bottom = min(image.shape[1 - index], left_top + self.image_size)
+        left_top -= self.image_size - (right_bottom - left_top)
+        if index == 0:
+            return image[:, left_top:right_bottom, :], joint - (left_top, 0, 0)
+        else:
+            return image[left_top:right_bottom, :, :], joint - (0, left_top, 0)
+
+    def _validate(self, joint):
+        joint_xy = joint[:, :2]
+        small_side_condition = (joint_xy > 0).all()
+        big_side_condition = (joint_xy < self.image_size).all()
+        j_min = np.min(joint_xy, 0)
+        j_max = np.max(joint_xy, 0)
+        j_diff = j_max - j_min
+        crop_size_condition = (j_diff < self.crop_size).all()
+        return small_side_condition and big_side_condition and crop_size_condition
 
     def _save_image(self, dataset_name, image_file, image):
         path = os.path.join(self.output, 'images', dataset_name)
@@ -114,10 +115,10 @@ class LSPDatasetGenerator(object):
             for i, joint in enumerate(tqdm(joints, ascii=True), 1):
                 # load image
                 image_file, image = self._load_image(dataset_name, i)
-                # save cropped image
-                try:
-                    image = self._crop_image(image, joint)
-                except CropFailed:
+                # save scaled & cropped image
+                image, joint = self._scale_image(image, joint)
+                image, joint = self._crop_image(image, joint)
+                if not self._validate(joint):
                     continue
                 image_path = self._save_image(dataset_name, image_file, image)
                 # write datase

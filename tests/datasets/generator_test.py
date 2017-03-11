@@ -7,7 +7,7 @@ from nose.tools import eq_, ok_, raises
 from mock import patch
 import numpy as np
 
-from modules.errors import FileNotFoundError, SaveImageFailed, CropFailed
+from modules.errors import FileNotFoundError, SaveImageFailed
 from modules.datasets import LSPDatasetGenerator
 
 
@@ -77,66 +77,66 @@ class TestLSPDatasetDownloader(unittest.TestCase):
         dataset_name = 'test_dataset'
         image_file, image = self.generator._load_image(dataset_name, 1)
 
-    def test_validate_crop_feasibility(self):
-        crop = self.generator._validate_crop_feasibility(11, 5, 6)
-        eq_(crop, 0)
-        crop = self.generator._validate_crop_feasibility(13, 5, 6)
-        eq_(crop, 2)
-
-    @raises(CropFailed)
-    def test_validate_crop_feasibility_too_tight_originally_min(self):
-        self.generator._validate_crop_feasibility(13, 0, 10)
-
-    @raises(CropFailed)
-    def test_validate_crop_feasibility_too_tight_originally_max(self):
-        self.generator._validate_crop_feasibility(11, 1, 10)
-
-    @raises(CropFailed)
-    def test_validate_crop_feasibility_too_tight(self):
-        self.generator._validate_crop_feasibility(13, 1, 10)
+    def test_scale_image(self):
+        joint = np.array([[20, 30, 0], [40, 50, 0]])
+        # scale up
+        image = np.zeros((160, 120, 3))
+        scaled_image, scaled_joint = self.generator._scale_image(image, joint)
+        eq_(scaled_image.shape[1], 256)
+        correct = joint*2.13
+        ok_((scaled_joint - correct < 1.).all())
+        # scale down
+        image = np.zeros((480, 620, 3))
+        scaled_image, scaled_joint = self.generator._scale_image(image, joint)
+        eq_(scaled_image.shape[0], 256)
+        correct = joint*0.53
+        ok_((scaled_joint - correct < 1.).all())
 
     def test_crop_image(self):
-        W, H = 13, 14
+        # crop width side
+        W, H = 320, 256
         image = np.arange(H*W*3).reshape((H, W, 3))
-        # crop left&top side
-        joint = np.array([[3, 4, 0], [10, 10, 0]])
-        cropped = self.generator._crop_image(image, joint)
-        h, w, _ = cropped.shape
-        eq_((w - self.generator.ksize)%self.generator.stride, 0)
-        eq_((h - self.generator.ksize)%self.generator.stride, 0)
-        ok_((cropped == image[3:, 2:, :]).all())
-        # crop right&bottom side
-        joint = np.array([[3, 4, 0], [9, 9, 0]])
-        cropped = self.generator._crop_image(image, joint)
-        h, w, _ = cropped.shape
-        eq_((w - self.generator.ksize)%self.generator.stride, 0)
-        eq_((h - self.generator.ksize)%self.generator.stride, 0)
-        ok_((cropped == image[:11, :11, :]).all())
-        # crop left&bottom side
-        joint = np.array([[3, 4, 0], [10, 9, 0]])
-        cropped = self.generator._crop_image(image, joint)
-        h, w, _ = cropped.shape
-        eq_((w - self.generator.ksize)%self.generator.stride, 0)
-        eq_((h - self.generator.ksize)%self.generator.stride, 0)
-        ok_((cropped == image[:11, 2:, :]).all())
+        # crop on a joint center
+        joint = np.array([[100, 30, 0], [160, 50, 0]])
+        cropped_image, cropped_joint = self.generator._crop_image(image, joint)
+        eq_(cropped_image.shape, (256, 256, 3))
+        ok_((cropped_image == image[:, 2:258, :]).all())
+        correct = np.array([[98, 30, 0], [158, 50, 0]])
+        ok_((cropped_joint == correct).all())
+        # left side is too tight
+        joint = np.array([[20, 30, 0], [40, 50, 0]])
+        cropped_image, cropped_joint = self.generator._crop_image(image, joint)
+        eq_(cropped_image.shape, (256, 256, 3))
+        ok_((cropped_image == image[:, :256, :]).all())
+        correct = np.array([[20, 30, 0], [40, 50, 0]])
+        ok_((cropped_joint == correct).all())
+        # left side is too tight
+        joint = np.array([[200, 30, 0], [400, 50, 0]])
+        cropped_image, cropped_joint = self.generator._crop_image(image, joint)
+        eq_(cropped_image.shape, (256, 256, 3))
+        ok_((cropped_image == image[:, 64:, :]).all())
+        correct = np.array([[136, 30, 0], [336, 50, 0]])
+        ok_((cropped_joint == correct).all())
+        # crop height side
+        W, H = 256, 320
+        image = np.arange(H*W*3).reshape((H, W, 3))
+        # crop on a joint center
+        joint = np.array([[20, 140, 0], [40, 240, 0]])
+        cropped_image, cropped_joint = self.generator._crop_image(image, joint)
+        eq_(cropped_image.shape, (256, 256, 3))
+        ok_((cropped_image == image[62:318, :, :]).all())
+        correct = np.array([[20, 78, 0], [40, 178, 0]])
+        ok_((cropped_joint == correct).all())
 
-    def test_crop_image_tight(self):
-        W, H = 13, 14
-        image = np.arange(H*W*3).reshape((H, W, 3))
-        # crop left&top side
-        joint = np.array([[2, 3, 0], [10, 11, 0]])
-        cropped = self.generator._crop_image(image, joint)
-        h, w, _ = cropped.shape
-        eq_((w - self.generator.ksize)%self.generator.stride, 0)
-        eq_((h - self.generator.ksize)%self.generator.stride, 0)
-        ok_((cropped == image[2:13, 1:12, :]).all())
-        # crop right&bottom side
-        joint = np.array([[2, 2, 0], [10, 10, 0]])
-        cropped = self.generator._crop_image(image, joint)
-        h, w, _ = cropped.shape
-        eq_((w - self.generator.ksize)%self.generator.stride, 0)
-        eq_((h - self.generator.ksize)%self.generator.stride, 0)
-        ok_((cropped == image[1:12, 1:12, :]).all())
+    def test_validate(self):
+        joint = np.array([[20, 30, 1], [40, 50, 0]])
+        eq_(self.generator._validate(joint), True)
+        joint = np.array([[0, 30, 1], [40, 50, 0]])
+        eq_(self.generator._validate(joint), False)
+        joint = np.array([[20, 30, 1], [40, 256, 0]])
+        eq_(self.generator._validate(joint), False)
+        joint = np.array([[10, 30, 1], [237, 40, 0]])
+        eq_(self.generator._validate(joint), False)
 
     @patch('cv2.imwrite', return_value=True)
     @patch('os.path.isdir', return_value=True)
@@ -187,22 +187,22 @@ class TestLSPDatasetDownloader(unittest.TestCase):
 
     @patch('cv2.imwrite', return_value=True)
     @patch('os.path.isdir', return_value=True)
-    @patch('cv2.imread', return_value=np.zeros((14, 13, 3)))
+    @patch('cv2.imread', return_value=np.zeros((128, 192, 3)))
     @patch('modules.datasets.generator.loadmat')
     def test_generate_datasets(self, m1, m2, m3, m4):
         # prepare mock.
-        joints = np.array([[[1, 2, 0], [3, 4, 1]],
-                           [[5, 6, 1], [7, 8, 0]],
-                           [[0, 0, 0], [1, 1, 0]]])
+        joints = np.array([[[50, 60, 0], [150, 100, 1]],
+                           [[100, 40, 1], [120, 80, 0]],
+                           [[40, 0, 0], [180, 1, 0]]])
         m1.side_effect = [{'joints': joints.transpose(2, 1, 0).copy()},
                           {'joints': joints.transpose(1, 2, 0).copy()}]
         # test case.
         datasets = self.generator._generate_datasets()
         eq_(datasets['test'], [])
-        train = ['{0},1,2,1,3,4,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),
-                 '{0},5,6,0,7,8,1\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0002.jpg')),
-                 '{0},1,2,0,3,4,1\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00001.jpg')),
-                 '{0},5,6,1,7,8,0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00002.jpg'))]
+        train = ['{0},28.0,120.0,1.0,228.0,200.0,0.0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),
+                 '{0},108.0,80.0,0.0,148.0,160.0,1.0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0002.jpg')),
+                 '{0},28.0,120.0,0.0,228.0,200.0,1.0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00001.jpg')),
+                 '{0},108.0,80.0,1.0,148.0,160.0,0.0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00002.jpg'))]
         eq_(datasets['train'], train)
 
     @patch('modules.datasets.generator.open')
@@ -220,13 +220,13 @@ class TestLSPDatasetDownloader(unittest.TestCase):
     @patch('modules.datasets.generator.open')
     @patch('cv2.imwrite', return_value=True)
     @patch('os.path.isdir', return_value=True)
-    @patch('cv2.imread', return_value=np.zeros((14, 13, 3)))
+    @patch('cv2.imread', return_value=np.zeros((128, 192, 3)))
     @patch('modules.datasets.generator.loadmat')
     def test_generate(self, m1, m2, m3, m4, m5):
         # prepare mock.
-        joints = np.array([[[1, 2, 0], [3, 4, 1]],
-                           [[5, 6, 0], [12, 13, 0]],
-                           [[5, 6, 1], [7, 8, 0]]])
+        joints = np.array([[[50, 60, 0], [150, 100, 1]],
+                           [[40, 0, 0], [180, 1, 0]],
+                           [[100, 40, 1], [120, 80, 0]]])
         m1.side_effect = [{'joints': joints.transpose(2, 1, 0).copy()},
                           {'joints': joints.transpose(1, 2, 0).copy()}]
         # test case.
@@ -234,8 +234,8 @@ class TestLSPDatasetDownloader(unittest.TestCase):
         eq_(m5.call_args_list,
             [((os.path.join(self.output, 'test'), 'w'),),
              ((os.path.join(self.output, 'train'), 'w'),)])
-        train = [(('{0},1,2,1,3,4,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),),),
-                 (('{0},5,6,0,7,8,1\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0003.jpg')),),),
-                 (('{0},1,2,0,3,4,1\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00001.jpg')),),),
-                 (('{0},5,6,1,7,8,0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00003.jpg')),),)]
+        train = [(('{0},28.0,120.0,1.0,228.0,200.0,0.0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),),),
+                 (('{0},108.0,80.0,0.0,148.0,160.0,1.0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0003.jpg')),),),
+                 (('{0},28.0,120.0,0.0,228.0,200.0,1.0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00001.jpg')),),),
+                 (('{0},108.0,80.0,1.0,148.0,160.0,0.0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00003.jpg')),),)]
         eq_(m5.return_value.write.call_args_list, train)

@@ -14,10 +14,6 @@ class SaveImageFailed(BaseError):
     """ Raise when fail to save error. """
     pass
 
-class CropFailed(BaseError):
-    """ Raise when fail to crop image. """
-    pass
-
 class UnknownOptimizationMethodError(BaseError):
     """ Raise when the optimization method is unknown. """
     pass
