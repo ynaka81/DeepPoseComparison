@@ -53,25 +53,30 @@ class LSPDatasetGenerator(object):
             raise FileNotFoundError('{0} is not found.'.format(path))
         return image_file, image
 
-    def _scale_image(self, image, joint):
+    def _pad_image(self, image, joint):
         height, width, _ = image.shape
-        # scale image so that smaller side is equal to desired image size
-        small_side = min(width, height)
-        ratio = float(self.image_size)/small_side
-        return cv2.resize(image, None, fx=ratio, fy=ratio), joint*(ratio, ratio, 1)
+        shape = np.array((width, height))
+        residual = (self.image_size - shape).clip(0, self.image_size)
+        left, top = residual/2
+        right, bottom = residual - residual/2
+        padded_image = cv2.copyMakeBorder(
+            image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=0)
+        moved_joint = joint + (left, top, 0)
+        return padded_image, moved_joint
 
     def _crop_image(self, image, joint):
-        # crop bigger side
-        index = 1 - np.argmax(image.shape)
+        height, width, _ = image.shape
+        shape = (width, height)
+        crop_shape = [0, 0, 0, 0]
         # crop on a joint center
-        j_c = np.mean(joint[:, index])
-        left_top = max(0, int(j_c - float(self.image_size)/2))
-        right_bottom = min(image.shape[1 - index], left_top + self.image_size)
-        left_top -= self.image_size - (right_bottom - left_top)
-        if index == 0:
-            return image[:, left_top:right_bottom, :], joint - (left_top, 0, 0)
-        else:
-            return image[left_top:right_bottom, :, :], joint - (0, left_top, 0)
+        for i in range(2):
+            j_c = np.mean(joint[:, i])
+            crop_shape[2*i] = max(0, int(j_c - float(self.image_size)/2))
+            crop_shape[2*i + 1] = min(shape[i], crop_shape[2*i] + self.image_size)
+            crop_shape[2*i] -= self.image_size - (crop_shape[2*i + 1] - crop_shape[2*i])
+        cropped_image = image[crop_shape[2]:crop_shape[3], crop_shape[0]:crop_shape[1]]
+        moved_joint = joint - (crop_shape[0], crop_shape[2], 0)
+        return cropped_image, moved_joint
 
     def _validate(self, joint):
         joint_xy = joint[:, :2]
@@ -115,11 +120,12 @@ class LSPDatasetGenerator(object):
             for i, joint in enumerate(tqdm(joints, ascii=True), 1):
                 # load image
                 image_file, image = self._load_image(dataset_name, i)
-                # save scaled & cropped image
-                image, joint = self._scale_image(image, joint)
+                # pad and crop image
+                image, joint = self._pad_image(image, joint)
                 image, joint = self._crop_image(image, joint)
                 if not self._validate(joint):
                     continue
+                # save the image
                 image_path = self._save_image(dataset_name, image_file, image)
                 # write datase
                 line = self._make_dataset_line(image_path, joint)
