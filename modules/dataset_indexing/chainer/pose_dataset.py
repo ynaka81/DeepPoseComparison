@@ -32,12 +32,13 @@ class PoseDataset(dataset.DatasetMixin):
         pose = self.poses[i]
         visibility = self.visibilities[i]
         # crop image.
-        image, pose = self._crop_image(image, pose)
+        image, pose = self._crop_image(image, pose, visibility)
         # add random noise for data augumentation.
         if self.data_augmentation:
             image = self._random_noise(image)
         # scale to [0, 1].
         image /= 255.
+        pose /= self.crop_size
         return image, pose, visibility
 
     def _load_dataset(self):
@@ -62,21 +63,24 @@ class PoseDataset(dataset.DatasetMixin):
             f.close()
         return image.transpose(2, 0, 1)
 
-    def _crop_image(self, image, pose):
+    def _crop_image(self, image, pose, visibility):
         _, height, width = image.shape
         shape = (width, height)
+        visible_pose = pose*visibility
+        p_min = np.min(visible_pose, 0)
+        p_max = np.max(visible_pose, 0)
+        p_c = (p_min + p_max)/2
         crop_shape = [0, 0, 0, 0]
         # crop on a joint center
         for i in range(2):
-            j_c = np.mean(pose[:, i])
             if self.data_augmentation:
-                crop_shape[2*i] = random.randint(0, shape[i] - self.crop_size)
+                crop_shape[2*i] = random.randint(0, int(min(p_min[i], shape[i] - self.crop_size)))
             else:
-                crop_shape[2*i] = max(0, int(j_c - float(self.crop_size)/2))
+                crop_shape[2*i] = max(0, int(p_c[i] - float(self.crop_size)/2))
             crop_shape[2*i + 1] = min(shape[i], crop_shape[2*i] + self.crop_size)
             crop_shape[2*i] -= self.crop_size - (crop_shape[2*i + 1] - crop_shape[2*i])
         cropped_image = image[:, crop_shape[2]:crop_shape[3], crop_shape[0]:crop_shape[1]]
-        moved_pose = pose - (crop_shape[0], crop_shape[2])
+        moved_pose = pose - np.array((crop_shape[0], crop_shape[2]), dtype=np.float32)
         return cropped_image, moved_pose
 
     @staticmethod
@@ -85,6 +89,7 @@ class PoseDataset(dataset.DatasetMixin):
         # add random noise to keep eigen value.
         C = np.cov(np.reshape(image, (3, -1)))
         l, e = np.linalg.eig(C)
+        l = np.maximum(l, 0)
         p = np.random.normal(0, 0.1)*np.matrix(e).T*np.sqrt(np.matrix(l)).T
         for c in range(3):
             image[c] += p[c]

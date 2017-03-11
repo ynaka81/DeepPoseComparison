@@ -50,40 +50,48 @@ class TestPoseDataset(unittest.TestCase):
 
     def test_crop_image(self):
         self.dataset.data_augmentation = False
-        image = np.arange(256*256*3).reshape((3, 256, 256))
+        image = np.arange(256*256*3, dtype=np.float32).reshape((3, 256, 256))
+        visibility = np.ones((2, 1), dtype=np.int32)
         # crop on a pose center
-        pose = np.array([[108, 50], [148, 180]])
-        cropped_image, moved_pose = self.dataset._crop_image(image, pose)
+        pose = np.array([[108, 50], [148, 180]], dtype=np.float32)
+        cropped_image, moved_pose = self.dataset._crop_image(image, pose, visibility)
+        eq_(cropped_image.dtype, np.float32)
         eq_(cropped_image.shape, (3, 227, 227))
         ok_((cropped_image == image[:, 1:228, 14:241]).all())
+        eq_(moved_pose.dtype, np.float32)
         correct = np.array([[94, 49], [134, 179]])
         ok_((moved_pose == correct).all())
         # left side is too tight
-        pose = np.array([[40, 50], [160, 180]])
-        cropped_image, moved_pose = self.dataset._crop_image(image, pose)
+        pose = np.array([[40, 50], [160, 180]], dtype=np.float32)
+        cropped_image, moved_pose = self.dataset._crop_image(image, pose, visibility)
+        eq_(cropped_image.dtype, np.float32)
         eq_(cropped_image.shape, (3, 227, 227))
         ok_((cropped_image == image[:, 1:228, :227]).all())
+        eq_(moved_pose.dtype, np.float32)
         correct = np.array([[40, 49], [160, 179]])
         ok_((moved_pose == correct).all())
         # right side is too tight
-        pose = np.array([[100, 50], [200, 180]])
-        cropped_image, moved_pose = self.dataset._crop_image(image, pose)
+        pose = np.array([[100, 50], [200, 180]], dtype=np.float32)
+        cropped_image, moved_pose = self.dataset._crop_image(image, pose, visibility)
+        eq_(cropped_image.dtype, np.float32)
         eq_(cropped_image.shape, (3, 227, 227))
         ok_((cropped_image == image[:, 1:228, 29:]).all())
+        eq_(moved_pose.dtype, np.float32)
         correct = np.array([[71, 49], [171, 179]])
         ok_((moved_pose == correct).all())
 
     def test_crop_image_data_augmentation(self):
         self.dataset.data_augmentation = False
-        image = np.zeros((3, 256, 256))
-        pose = np.zeros((2, 2))
+        image = np.zeros((3, 256, 256), dtype=np.float32)
+        pose = np.zeros((2, 2), dtype=np.float32)
+        visibility = np.ones((2, 1), dtype=np.int32)
         for i in range(20):
-            cropped_image, _ = self.dataset._crop_image(image, pose)
+            cropped_image, moved_pose = self.dataset._crop_image(image, pose, visibility)
+            eq_(cropped_image.dtype, np.float32)
             eq_(cropped_image.shape, (3, 227, 227))
-            # p_min = np.min(pose_i, 0)
-            # p_max = np.max(pose_i, 0)
-            # ok_((p_min >= 1).all())
-            # ok_((p_max < shape - 1).all())
+            eq_(moved_pose.dtype, np.float32)
+            ok_((moved_pose >= 0).all())
+            ok_((moved_pose <= 1).all())
 
     def _calculate_image_eigen(self, image):
         C = np.cov(np.reshape(image, (3, -1)))
@@ -97,6 +105,7 @@ class TestPoseDataset(unittest.TestCase):
         diff = []
         for i in range(100):
             noise_image = self.dataset._random_noise(image)
+            eq_(noise_image.dtype, np.float32)
             self.assertGreaterEqual(np.min(noise_image), 0)
             self.assertLessEqual(np.max(noise_image), 255)
             l_noise = self._calculate_image_eigen(noise_image)
@@ -120,13 +129,14 @@ class TestPoseDataset(unittest.TestCase):
             for i in range(len(self.dataset)):
                 image, pose, visibility = self.dataset.get_example(i)
                 # test for image.
+                eq_(image.dtype, np.float32)
                 eq_(image.shape, (3, 227, 227))
                 self.assertGreaterEqual(np.min(image), 0)
                 self.assertLessEqual(np.max(image), 1)
-                # # test for pose.
-                # p_min = np.min(pose, 0)
-                # p_max = np.max(pose, 0)
-                # ok_((p_min >= 1).all())
-                # ok_((p_max < shape - 1).all())
+                # test for pose.
+                eq_(pose.dtype, np.float32)
+                ok_((pose >= 0).all())
+                ok_((pose <= 1).all())
                 # test for visibility.
+                eq_(visibility.dtype, np.int32)
                 eq_(visibility.shape, (3, 1))
