@@ -78,24 +78,24 @@ class TestLSPDatasetDownloader(unittest.TestCase):
         image_file, image = self.generator._load_image(dataset_name, 1)
 
     def test_pad_image(self):
-        joint = np.array([[10, 20, 0], [30, 40, 0]])
+        joint = np.array([[10, 20, 1], [30, 40, 1]])
         # pad width and height side
         image = np.zeros((100, 100, 3))
         padded_image, moved_joint = self.generator._pad_image(image, joint)
         eq_(padded_image.shape, (256, 256, 3))
-        correct = np.array([[88, 98, 0], [108, 118, 0]])
+        correct = np.array([[88, 98, 1], [108, 118, 1]])
         ok_((moved_joint == correct).all())
         # pad only one side
         image = np.zeros((300, 100, 3))
         padded_image, moved_joint = self.generator._pad_image(image, joint)
         eq_(padded_image.shape, (300, 256, 3))
-        correct = np.array([[88, 20, 0], [108, 40, 0]])
+        correct = np.array([[88, 20, 1], [108, 40, 1]])
         ok_((moved_joint == correct).all())
         # not pad
         image = np.zeros((300, 300, 3))
         padded_image, moved_joint = self.generator._pad_image(image, joint)
         eq_(padded_image.shape, (300, 300, 3))
-        correct = np.array([[10, 20, 0], [30, 40, 0]])
+        correct = np.array([[10, 20, 1], [30, 40, 1]])
         ok_((moved_joint == correct).all())
 
     def test_crop_image(self):
@@ -103,43 +103,43 @@ class TestLSPDatasetDownloader(unittest.TestCase):
         W, H = 320, 256
         image = np.arange(H*W*3).reshape((H, W, 3))
         # crop on a joint center
-        joint = np.array([[100, 30, 0], [160, 50, 0]])
+        joint = np.array([[100, 30, 1], [160, 50, 1]])
         cropped_image, moved_joint = self.generator._crop_image(image, joint)
         eq_(cropped_image.shape, (256, 256, 3))
         ok_((cropped_image == image[:, 2:258, :]).all())
-        correct = np.array([[98, 30, 0], [158, 50, 0]])
+        correct = np.array([[98, 30, 1], [158, 50, 1]])
         ok_((moved_joint == correct).all())
         # left side is too tight
-        joint = np.array([[20, 30, 0], [40, 50, 0]])
+        joint = np.array([[20, 30, 1], [40, 50, 1]])
         cropped_image, moved_joint = self.generator._crop_image(image, joint)
         eq_(cropped_image.shape, (256, 256, 3))
         ok_((cropped_image == image[:, :256, :]).all())
-        correct = np.array([[20, 30, 0], [40, 50, 0]])
+        correct = np.array([[20, 30, 1], [40, 50, 1]])
         ok_((moved_joint == correct).all())
         # right side is too tight
-        joint = np.array([[200, 30, 0], [400, 50, 0]])
+        joint = np.array([[200, 30, 1], [400, 50, 1]])
         cropped_image, moved_joint = self.generator._crop_image(image, joint)
         eq_(cropped_image.shape, (256, 256, 3))
         ok_((cropped_image == image[:, 64:, :]).all())
-        correct = np.array([[136, 30, 0], [336, 50, 0]])
+        correct = np.array([[136, 30, 1], [336, 50, 1]])
         ok_((moved_joint == correct).all())
         # crop height side
         W, H = 256, 320
         image = np.arange(H*W*3).reshape((H, W, 3))
-        joint = np.array([[20, 140, 0], [40, 240, 0]])
+        joint = np.array([[20, 140, 1], [40, 240, 1]])
         cropped_image, moved_joint = self.generator._crop_image(image, joint)
         eq_(cropped_image.shape, (256, 256, 3))
         ok_((cropped_image == image[62:318, :, :]).all())
-        correct = np.array([[20, 78, 0], [40, 178, 0]])
+        correct = np.array([[20, 78, 1], [40, 178, 1]])
         ok_((moved_joint == correct).all())
         # crop both side
         W, H = 320, 320
         image = np.arange(H*W*3).reshape((H, W, 3))
-        joint = np.array([[100, 140, 0], [160, 240, 0]])
+        joint = np.array([[100, 140, 1], [160, 240, 1]])
         cropped_image, moved_joint = self.generator._crop_image(image, joint)
         eq_(cropped_image.shape, (256, 256, 3))
         ok_((cropped_image == image[62:318, 2:258, :]).all())
-        correct = np.array([[98, 78, 0], [158, 178, 0]])
+        correct = np.array([[98, 78, 1], [158, 178, 1]])
         ok_((moved_joint == correct).all())
 
     def test_validate(self):
@@ -207,18 +207,18 @@ class TestLSPDatasetDownloader(unittest.TestCase):
     @patch('modules.datasets.generator.loadmat')
     def test_generate_datasets(self, m1, m2, m3, m4):
         # prepare mock.
-        joints = np.array([[[50, 80, 0], [150, 260, 1]],
-                           [[100, 200, 1], [120, 280, 0]],
-                           [[40, 10, 0], [120, 290, 1]]])
+        joints = np.array([[[50, 80, 0], [50, 80, 1], [150, 260, 1], [150, 260, 0]],
+                           [[100, 200, 1], [100, 200, 0], [120, 280, 0], [120, 280, 1]],
+                           [[40, 10, 0], [40, 10, 1], [120, 290, 1], [120, 290, 0]]])
         m1.side_effect = [{'joints': joints.transpose(2, 1, 0).copy()},
                           {'joints': joints.transpose(1, 2, 0).copy()}]
         # test case.
         datasets = self.generator._generate_datasets()
         eq_(datasets['test'], [])
-        train = ['{0},78,38,1,178,218,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),
-                 '{0},128,156,0,148,236,1\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0002.jpg')),
-                 '{0},78,38,0,178,218,1\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00001.jpg')),
-                 '{0},128,156,1,148,236,0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00002.jpg'))]
+        train = ['{0},78,38,1,78,38,0,178,218,0,178,218,1\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),
+                 '{0},128,156,0,128,156,1,148,236,1,148,236,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0002.jpg')),
+                 '{0},78,38,0,78,38,1,178,218,1,178,218,0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00001.jpg')),
+                 '{0},128,156,1,128,156,0,148,236,0,148,236,1\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00002.jpg'))]
         eq_(datasets['train'], train)
 
     @patch('modules.datasets.generator.open')
@@ -240,9 +240,9 @@ class TestLSPDatasetDownloader(unittest.TestCase):
     @patch('modules.datasets.generator.loadmat')
     def test_generate(self, m1, m2, m3, m4, m5):
         # prepare mock.
-        joints = np.array([[[50, 80, 0], [150, 260, 1]],
-                           [[40, 10, 0], [120, 290, 1]],
-                           [[100, 200, 1], [120, 280, 0]]])
+        joints = np.array([[[50, 80, 0], [50, 80, 1], [150, 260, 1], [150, 260, 0]],
+                           [[40, 10, 0], [40, 10, 1], [120, 290, 1], [120, 290, 0]],
+                           [[100, 200, 1], [100, 200, 0], [120, 280, 0], [120, 280, 1]]])
         m1.side_effect = [{'joints': joints.transpose(2, 1, 0).copy()},
                           {'joints': joints.transpose(1, 2, 0).copy()}]
         # test case.
@@ -250,8 +250,8 @@ class TestLSPDatasetDownloader(unittest.TestCase):
         eq_(m5.call_args_list,
             [((os.path.join(self.output, 'test'), 'w'),),
              ((os.path.join(self.output, 'train'), 'w'),)])
-        train = [(('{0},78,38,1,178,218,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),),),
-                 (('{0},128,156,0,148,236,1\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0003.jpg')),),),
-                 (('{0},78,38,0,178,218,1\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00001.jpg')),),),
-                 (('{0},128,156,1,148,236,0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00003.jpg')),),)]
+        train = [(('{0},78,38,1,78,38,0,178,218,0,178,218,1\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),),),
+                 (('{0},128,156,0,128,156,1,148,236,1,148,236,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0003.jpg')),),),
+                 (('{0},78,38,0,78,38,1,178,218,1,178,218,0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00001.jpg')),),),
+                 (('{0},128,156,1,128,156,0,148,236,0,148,236,1\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00003.jpg')),),)]
         eq_(m5.return_value.write.call_args_list, train)

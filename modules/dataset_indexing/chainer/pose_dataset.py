@@ -66,7 +66,7 @@ class PoseDataset(dataset.DatasetMixin):
     def _crop_image(self, image, pose, visibility):
         _, height, width = image.shape
         shape = (width, height)
-        visible_pose = pose*visibility
+        visible_pose = pose[visibility.ravel().astype(bool)]
         p_min = np.min(visible_pose, 0)
         p_max = np.max(visible_pose, 0)
         p_c = (p_min + p_max)/2

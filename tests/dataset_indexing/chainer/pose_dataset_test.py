@@ -36,8 +36,8 @@ class TestPoseDataset(unittest.TestCase):
     @patch('modules.dataset_indexing.chainer.pose_dataset.open')
     def setUp(self, mock):
         # prepare mock.
-        mock.return_value = ['image1.png,1.0,2.0,0.0,3.0,4.0,1.0,5.0,6.0,0.0\n',
-                             'image2.png,7.0,8.0,1.0,9.0,8.0,0.0,7.0,6.0,1.0\n']
+        mock.return_value = ['image1.png,108.0,50.0,1.0,148.0,180.0,1.0,148.0,180.0,1.0\n',
+                             'image2.png,40.0,50.0,1.0,160.0,180.0,1.0,160.0,180.0,0.0\n']
         # set up.
         self.path = 'test_data'
         self.dataset = PoseDataset(self.path)

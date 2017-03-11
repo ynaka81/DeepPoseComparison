@@ -67,11 +67,15 @@ class LSPDatasetGenerator(object):
     def _crop_image(self, image, joint):
         height, width, _ = image.shape
         shape = (width, height)
+        visibility = joint[:, 2].astype(bool)
+        visible_joint = joint[visibility]
+        j_min = np.min(visible_joint, 0)
+        j_max = np.max(visible_joint, 0)
+        j_c = (j_min + j_max)/2
         crop_shape = [0, 0, 0, 0]
         # crop on a joint center
         for i in range(2):
-            j_c = np.mean(joint[:, i])
-            crop_shape[2*i] = max(0, int(j_c - float(self.image_size)/2))
+            crop_shape[2*i] = max(0, int(j_c[i] - float(self.image_size)/2))
             crop_shape[2*i + 1] = min(shape[i], crop_shape[2*i] + self.image_size)
             crop_shape[2*i] -= self.image_size - (crop_shape[2*i + 1] - crop_shape[2*i])
         cropped_image = image[crop_shape[2]:crop_shape[3], crop_shape[0]:crop_shape[1]]
