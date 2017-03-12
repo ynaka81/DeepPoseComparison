@@ -81,17 +81,17 @@ class TestPoseDataset(unittest.TestCase):
         ok_((moved_pose == correct).all())
 
     def test_crop_image_data_augmentation(self):
-        self.dataset.data_augmentation = False
+        self.dataset.data_augmentation = True
         image = np.zeros((3, 256, 256), dtype=np.float32)
-        pose = np.zeros((2, 2), dtype=np.float32)
         visibility = np.ones((2, 1), dtype=np.int32)
         for i in range(20):
+            pose = np.random.rand(2, 2).astype(np.float32)*227
             cropped_image, moved_pose = self.dataset._crop_image(image, pose, visibility)
             eq_(cropped_image.dtype, np.float32)
             eq_(cropped_image.shape, (3, 227, 227))
             eq_(moved_pose.dtype, np.float32)
             ok_((moved_pose >= 0).all())
-            ok_((moved_pose <= 1).all())
+            ok_((moved_pose <= 227).all())
 
     def _calculate_image_eigen(self, image):
         C = np.cov(np.reshape(image, (3, -1)))
