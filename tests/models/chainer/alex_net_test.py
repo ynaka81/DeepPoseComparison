@@ -10,7 +10,7 @@ from chainer.testing import condition
 from modules.models.chainer import AlexNet
 
 
-class TestMeanSquaredError(unittest.TestCase):
+class TestAlexNet(unittest.TestCase):
 
     def setUp(self):
         self.N = 3
