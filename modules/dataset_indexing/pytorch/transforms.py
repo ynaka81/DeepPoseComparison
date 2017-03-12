@@ -3,6 +3,7 @@
 
 import random
 import numpy as np
+import torch
 
 
 # pylint: disable=too-few-public-methods
@@ -19,7 +20,7 @@ class Crop(object):
         self.crop_size = crop_size
 
     def __call__(self, image, pose, visibility):
-        _, height, width = image.shape
+        _, height, width = image.size()
         shape = (width, height)
         visible_pose = pose[visibility.ravel().astype(bool)]
         p_min = np.min(visible_pose, 0)
@@ -34,9 +35,9 @@ class Crop(object):
                 crop_shape[2*i] = max(0, int(p_c[i] - float(self.crop_size)/2))
             crop_shape[2*i + 1] = min(shape[i], crop_shape[2*i] + self.crop_size)
             crop_shape[2*i] -= self.crop_size - (crop_shape[2*i + 1] - crop_shape[2*i])
-        cropped_image = image[:, crop_shape[2]:crop_shape[3], crop_shape[0]:crop_shape[1]]
-        moved_pose = pose - np.array((crop_shape[0], crop_shape[2]), dtype=np.float32)
-        return cropped_image, moved_pose
+        transformed_image = image[:, crop_shape[2]:crop_shape[3], crop_shape[0]:crop_shape[1]]
+        transformed_pose = pose - np.array((crop_shape[0], crop_shape[2]), dtype=np.float32)
+        return transformed_image, transformed_pose, visibility
 
 # pylint: disable=too-few-public-methods
 class RandomNoise(object):
@@ -44,17 +45,17 @@ class RandomNoise(object):
     """
 
     def __call__(self, image):
-        image = image.copy()
+        numpy_image = image.numpy()
         # add random noise to keep eigen value.
-        C = np.cov(np.reshape(image, (3, -1)))
+        C = np.cov(np.reshape(numpy_image, (3, -1)))
         l, e = np.linalg.eig(C)
         l = np.maximum(l, 0)
-        p = np.random.normal(0, 0.1)*np.matrix(e).T*np.sqrt(np.matrix(l)).T
+        p = np.random.normal(0, 0.01)*np.matrix(e).T*np.sqrt(np.matrix(l)).T
         for c in range(3):
-            image[c] += p[c]
-        image = np.clip(image, 0, 1)
+            numpy_image[c] += p[c]
+        numpy_image = np.clip(numpy_image, 0, 1)
         # return augmented data.
-        return image
+        return torch.Tensor(numpy_image)
 
 # pylint: disable=too-few-public-methods
 class Scale(object):

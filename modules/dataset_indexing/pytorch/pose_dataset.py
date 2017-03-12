@@ -35,10 +35,10 @@ class PoseDataset(data.Dataset):
         visibility = self.visibilities[index]
         if self.input_transform is not None:
             image = self.input_transform(image)
+        if self.transform is not None:
+            image, pose, visibility = self.transform(image, pose, visibility)
         if self.output_transform is not None:
             pose = self.output_transform(pose)
-        if self.transform is not None:
-            image, pose = self.transform(image, pose, visibility)
         return image, pose, visibility
 
     def _load_dataset(self):
