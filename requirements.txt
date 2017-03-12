@@ -8,5 +8,5 @@ zipfile2==0.0.12
 tqdm==4.11.2
 chainer==1.19.0
 Pillow==3.4.1
-torch==0.1.8.post1
+https://s3.amazonaws.com/pytorch/whl/cu75/torch-0.1.10.post2-cp27-none-linux_x86_64.whl
 torchvision==0.1.7
