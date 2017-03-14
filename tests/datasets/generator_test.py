@@ -153,6 +153,8 @@ class TestLSPDatasetDownloader(unittest.TestCase):
         eq_(self.generator._validate(joint), False)
         joint = np.array([[20, 30, 1], [-40, -50, 0]])
         eq_(self.generator._validate(joint), True)
+        joint = np.array([[20, 30, 0], [40, 50, 0]])
+        eq_(self.generator._validate(joint), True)
 
     @patch('cv2.imwrite', return_value=True)
     @patch('os.path.isdir', return_value=True)
