@@ -4,7 +4,6 @@
 import unittest
 from nose.tools import eq_, ok_
 from mock import patch
-import numpy as np
 from PIL import Image
 import torch
 from torchvision import transforms
@@ -23,12 +22,12 @@ class TestPoseDatasetConstructure(unittest.TestCase):
         # test.
         dataset = PoseDataset('test_data')
         eq_(dataset.images, ['image1.png', 'image2.png'])
-        correct = [np.array([[10, 20], [30, 40]], dtype=np.float32),
-                   np.array([[50, 60], [70, 80]], dtype=np.float32)]
+        correct = [torch.Tensor([[10, 20], [30, 40]]),
+                   torch.Tensor([[50, 60], [70, 80]])]
         for p, c in zip(dataset.poses, correct):
             ok_((p == c).all())
-        correct = [np.array([[0], [1]], dtype=np.int32),
-                   np.array([[1], [0]], dtype = np.int32)]
+        correct = [torch.ByteTensor([[0, 0], [1, 1]]),
+                   torch.ByteTensor([[1, 1], [0, 0]])]
         for v, c in zip(dataset.visibilities, correct):
             ok_((v == c).all())
 
@@ -64,18 +63,18 @@ class TestPoseDataset(unittest.TestCase):
         eq_(type(image), Image.Image)
         eq_(image.size, (256, 256))
         eq_(image.mode, 'RGB')
-        eq_(pose.dtype, np.float32)
-        ok_((pose == np.array([[108, 50], [148, 180], [148, 180]])).all())
-        eq_(visibility.dtype, np.int32)
-        ok_((visibility == np.array([[1], [0], [1]])).all())
+        eq_(type(pose), torch.FloatTensor)
+        ok_((pose == torch.Tensor([[108, 50], [148, 180], [148, 180]])).all())
+        eq_(type(visibility), torch.ByteTensor)
+        ok_((visibility == torch.ByteTensor([[1, 1], [0, 0], [1, 1]])).all())
         image, pose, visibility = self.dataset[1]
         eq_(type(image), Image.Image)
         eq_(image.size, (256, 256))
         eq_(image.mode, 'RGB')
-        eq_(pose.dtype, np.float32)
-        ok_((pose == np.array([[40, 50], [160, 180], [160, 180]])).all())
-        eq_(visibility.dtype, np.int32)
-        ok_((visibility == np.array([[1], [1], [0]])).all())
+        eq_(type(pose), torch.FloatTensor)
+        ok_((pose == torch.Tensor([[40, 50], [160, 180], [160, 180]])).all())
+        eq_(type(visibility), torch.ByteTensor)
+        ok_((visibility == torch.ByteTensor([[1, 1], [1, 1], [0, 0]])).all())
 
 class TestPoseDatasetWithTransform(unittest.TestCase):
 
@@ -103,16 +102,16 @@ class TestPoseDatasetWithTransform(unittest.TestCase):
         image, pose, visibility = self.dataset[0]
         eq_(type(image), torch.FloatTensor)
         eq_(image.size(), (3, 227, 227))
-        eq_(pose.dtype, np.float32)
-        ok_(np.linalg.norm(pose - np.array([[94., 49.], [134., 179.], [134., 179.]])/227) < 1.e-5)
-        eq_(visibility.dtype, np.int32)
-        ok_((visibility == np.array([[1], [0], [1]])).all())
+        eq_(type(pose), torch.FloatTensor)
+        ok_(torch.dist(pose, torch.Tensor([[94, 49], [134, 179], [134, 179]])/227) < 1.e-5)
+        eq_(type(visibility), torch.ByteTensor)
+        ok_((visibility == torch.ByteTensor([[1, 1], [0, 0], [1, 1]])).all())
         image, pose, visibility = self.dataset[1]
         eq_(type(image), torch.FloatTensor)
         eq_(image.size(), (3, 227, 227))
-        ok_(np.linalg.norm(pose - np.array([[40., 49.], [160., 179.], [160., 179.]])/227) < 1.e-5)
-        eq_(visibility.dtype, np.int32)
-        ok_((visibility == np.array([[1], [1], [0]])).all())
+        ok_(torch.dist(pose, torch.Tensor([[40, 49], [160, 179], [160, 179]])/227) < 1.e-5)
+        eq_(type(visibility), torch.ByteTensor)
+        ok_((visibility == torch.ByteTensor([[1, 1], [1, 1], [0, 0]])).all())
 
 class TestPoseDatasetWithTransformDataAugmentation(unittest.TestCase):
 
@@ -144,8 +143,10 @@ class TestPoseDatasetWithTransformDataAugmentation(unittest.TestCase):
             eq_(image.size(), (3, 227, 227))
             ok_((image >= 0).all())
             ok_((image <= 1).all())
-            eq_(pose.dtype, np.float32)
+            eq_(type(pose), torch.FloatTensor)
             ok_((pose >= 0).all())
             ok_((pose <= 1).all())
-            eq_(visibility.dtype, np.int32)
-            eq_(visibility.shape, (3, 1))
+            eq_(type(visibility), torch.ByteTensor)
+            eq_(visibility.size(), (3, 2))
+            for j in range(3):
+                eq_(visibility[j].sum(), visibility[j, 0]*2)

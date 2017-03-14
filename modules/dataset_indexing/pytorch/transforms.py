@@ -22,9 +22,9 @@ class Crop(object):
     def __call__(self, image, pose, visibility):
         _, height, width = image.size()
         shape = (width, height)
-        visible_pose = pose[visibility.ravel().astype(bool)]
-        p_min = np.min(visible_pose, 0)
-        p_max = np.max(visible_pose, 0)
+        visible_pose = torch.masked_select(pose, visibility).view(-1, 2)
+        p_min = visible_pose.min(0)[0].squeeze()
+        p_max = visible_pose.max(0)[0].squeeze()
         p_c = (p_min + p_max)/2
         crop_shape = [0, 0, 0, 0]
         # crop on a joint center
@@ -36,7 +36,8 @@ class Crop(object):
             crop_shape[2*i + 1] = min(shape[i], crop_shape[2*i] + self.crop_size)
             crop_shape[2*i] -= self.crop_size - (crop_shape[2*i + 1] - crop_shape[2*i])
         transformed_image = image[:, crop_shape[2]:crop_shape[3], crop_shape[0]:crop_shape[1]]
-        transformed_pose = pose - np.array((crop_shape[0], crop_shape[2]), dtype=np.float32)
+        p_0 = torch.Tensor((crop_shape[0], crop_shape[2])).view(1, 2).expand_as(pose)
+        transformed_pose = pose - p_0
         return transformed_image, transformed_pose, visibility
 
 # pylint: disable=too-few-public-methods

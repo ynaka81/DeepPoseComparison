@@ -52,9 +52,11 @@ class MeanSquaredError(function.Function):
 
 def mean_squared_error(x, t, v, use_visibility=False):
     """ Computes mean squared error over the minibatch.
+
     Args:
         x (Variable): Variable holding an float32 vector of estimated pose.
-        t (Variable): Variable holding an float32 vector of ground truth pose and it's visibility.
+        t (Variable): Variable holding an float32 vector of ground truth pose.
+        v (Variable): Variable holding an int32 vector of ground truth pose's visibility.
             (0: invisible, 1: visible)
         use_visibility (bool): When it is ``True``,
             the function uses visibility to compute mean squared error.

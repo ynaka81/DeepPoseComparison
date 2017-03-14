@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """ Pose dataset indexing. """
 
-import numpy as np
 from PIL import Image
+import torch
 from torch.utils import data
 
 
@@ -48,10 +48,12 @@ class PoseDataset(data.Dataset):
         for line in open(self.path):
             line_split = line[:-1].split(',')
             images.append(line_split[0])
-            x = np.array(line_split[1:])
-            x = x.reshape(-1, 3)
-            poses.append(x[:, :2].astype(np.float32))
-            visibilities.append(x[:, 2].reshape(-1, 1).astype(np.float32).astype(np.int32))
+            x = torch.Tensor(map(float, line_split[1:]))
+            x = x.view(-1, 3)
+            pose = x[:, :2]
+            visibility = x[:, 2].byte().view(-1, 1).expand_as(pose)
+            poses.append(pose)
+            visibilities.append(visibility)
         return images, poses, visibilities
 
     @staticmethod

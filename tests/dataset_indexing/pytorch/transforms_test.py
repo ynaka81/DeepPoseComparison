@@ -17,44 +17,55 @@ class TestCrop(unittest.TestCase):
     def test_call(self):
         self.transform.data_augmentation = False
         image = torch.range(0, 256*256*3 - 1).view(3, 256, 256)
-        visibility = np.ones((2, 1), dtype=np.int32)
+        visibility = torch.ones(2, 2).byte()
         # crop on a pose center
-        pose = np.array([[108, 50], [148, 180]], dtype=np.float32)
+        pose = torch.Tensor([[108, 50], [148, 180]])
         transformed_image, transformed_pose, transformed_visibility = self.transform(image, pose, visibility)
         eq_(transformed_image.size(), (3, 227, 227))
         ok_((transformed_image == image[:, 1:228, 14:241]).all())
-        eq_(transformed_pose.dtype, np.float32)
-        correct = np.array([[94, 49], [134, 179]])
+        eq_(type(transformed_pose), torch.FloatTensor)
+        correct = torch.Tensor([[94, 49], [134, 179]])
         ok_((transformed_pose == correct).all())
         ok_((transformed_visibility == visibility).all())
         # left side is too tight
-        pose = np.array([[40, 50], [160, 180]], dtype=np.float32)
+        pose = torch.Tensor([[40, 50], [160, 180]])
         transformed_image, transformed_pose, transformed_visibility = self.transform(image, pose, visibility)
         eq_(transformed_image.size(), (3, 227, 227))
         ok_((transformed_image == image[:, 1:228, :227]).all())
-        eq_(transformed_pose.dtype, np.float32)
-        correct = np.array([[40, 49], [160, 179]])
+        eq_(type(transformed_pose), torch.FloatTensor)
+        correct = torch.Tensor([[40, 49], [160, 179]])
         ok_((transformed_pose == correct).all())
         ok_((transformed_visibility == visibility).all())
         # right side is too tight
-        pose = np.array([[100, 50], [200, 180]], dtype=np.float32)
+        pose = torch.Tensor([[100, 50], [200, 180]])
         transformed_image, transformed_pose, transformed_visibility = self.transform(image, pose, visibility)
         eq_(transformed_image.size(), (3, 227, 227))
         ok_((transformed_image == image[:, 1:228, 29:]).all())
-        eq_(transformed_pose.dtype, np.float32)
-        correct = np.array([[71, 49], [171, 179]])
+        eq_(type(transformed_pose), torch.FloatTensor)
+        correct = torch.Tensor([[71, 49], [171, 179]])
+        ok_((transformed_pose == correct).all())
+        ok_((transformed_visibility == visibility).all())
+        # check visibility
+        visibility = torch.ones(3, 2).byte()
+        visibility[2] = 0
+        pose = torch.Tensor([[108, 50], [148, 180], [250, 250]])
+        transformed_image, transformed_pose, transformed_visibility = self.transform(image, pose, visibility)
+        eq_(transformed_image.size(), (3, 227, 227))
+        ok_((transformed_image == image[:, 1:228, 14:241]).all())
+        eq_(type(transformed_pose), torch.FloatTensor)
+        correct = torch.Tensor([[94, 49], [134, 179], [236, 249]])
         ok_((transformed_pose == correct).all())
         ok_((transformed_visibility == visibility).all())
 
     def test_call_data_augmentation(self):
         self.transform.data_augmentation = True
         image = torch.zeros(3, 256, 256)
-        visibility = np.ones((2, 1), dtype=np.int32)
+        visibility = torch.ones(2, 2).byte()
         for i in range(20):
-            pose = np.random.rand(2, 2).astype(np.float32)*227
+            pose = torch.rand(2, 2)*227
             transformed_image, transformed_pose, transformed_visibility = self.transform(image, pose, visibility)
             eq_(transformed_image.size(), (3, 227, 227))
-            eq_(transformed_pose.dtype, np.float32)
+            eq_(type(transformed_pose), torch.Tensor)
             ok_((transformed_pose >= 0).all())
             ok_((transformed_pose <= 227).all())
             ok_((transformed_visibility == visibility).all())
@@ -92,8 +103,8 @@ class TestScale(unittest.TestCase):
 
     def test_call(self):
         for i in range(100):
-            pose = np.random.rand(14, 2).astype(np.float32)*self.value
+            pose = torch.rand(14, 2)*self.value
             transformed_pose = self.transform(pose)
-            eq_(transformed_pose.dtype, np.float32)
+            eq_(type(transformed_pose), torch.FloatTensor)
             ok_((transformed_pose >= 0).all())
             ok_((transformed_pose <= 1).all())
