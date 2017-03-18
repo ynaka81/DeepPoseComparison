@@ -87,7 +87,7 @@ class TrainPoseNet(object):
     def start(self):
         """ Train pose net. """
         # initialize model to train.
-        model = AlexNet(self.Nj)
+        model = AlexNet(self.Nj, self.use_visibility)
         if self.resume_model:
             serializers.load_npz(self.resume_model, model)
         # prepare gpu.
