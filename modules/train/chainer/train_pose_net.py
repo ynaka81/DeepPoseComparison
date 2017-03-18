@@ -30,6 +30,7 @@ class TrainPoseNet(object):
 
     Args:
         Nj (int): Number of joints.
+        use_visibility (bool): Use visibility to compute loss.
         epoch (int): Number of epochs to train.
         opt (str): Optimization method.
         gpu (int): GPU ID (negative value indicates CPU).
@@ -38,30 +39,29 @@ class TrainPoseNet(object):
         batchsize (int): Learning minibatch size.
         out (str): Output directory.
         resume (str): Initialize the trainer from given file.
-            The file name is 'epoch-{.updater.epoch}.iter'.
+            The file name is 'epoch-{epoch number}.iter'.
         resume_model (str): Load model definition file to use for resuming training
             (it\'s necessary when you resume a training).
-            The file name is 'epoch-{.updater.epoch}.model'.
+            The file name is 'epoch-{epoch number}.model'.
         resume_opt (str): Load optimization states from this file
             (it\'s necessary when you resume a training).
-            The file name is 'epoch-{.updater.epoch}.state'.
+            The file name is 'epoch-{epoch number}.state'.
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, Nj=14, epoch=100, gpu=-1, opt='Adam',
-                 train='data/train', val='data/test', batchsize=32, out='result',
-                 resume=None, resume_model=None, resume_opt=None):
-        self.Nj = Nj
-        self.epoch = epoch
-        self.gpu = gpu
-        self.opt = opt
-        self.train = train
-        self.val = val
-        self.batchsize = batchsize
-        self.out = out
-        self.resume = resume
-        self.resume_model = resume_model
-        self.resume_opt = resume_opt
+    def __init__(self, **kwargs):
+        self.Nj = kwargs['Nj']
+        self.use_visibility = kwargs['use_visibility']
+        self.epoch = kwargs['epoch']
+        self.gpu = kwargs['gpu']
+        self.opt = kwargs['opt']
+        self.train = kwargs['train']
+        self.val = kwargs['val']
+        self.batchsize = kwargs['batchsize']
+        self.out = kwargs['out']
+        self.resume = kwargs['resume']
+        self.resume_model = kwargs['resume_model']
+        self.resume_opt = kwargs['resume_opt']
         # validate arguments.
         self._validate_arguments()
 
@@ -102,12 +102,12 @@ class TrainPoseNet(object):
             train, self.batchsize)
         val_iter = chainer.iterators.MultiprocessIterator(
             val, self.batchsize, repeat=False, shuffle=False)
-        # Set up an optimizer
+        # set up an optimizer.
         optimizer = self._get_optimizer()
         optimizer.setup(model)
         if self.resume_opt:
             chainer.serializers.load_npz(self.resume_opt, optimizer)
-        # Set up a trainer
+        # set up a trainer.
         updater = training.StandardUpdater(train_iter, optimizer, device=self.gpu)
         trainer = training.Trainer(
             updater, (self.epoch, 'epoch'), os.path.join(self.out, 'chainer'))

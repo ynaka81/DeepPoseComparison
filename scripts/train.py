@@ -5,7 +5,7 @@ import argparse
 import sys
 
 sys.path.append("./")
-from modules.train.chainer import TrainPoseNet
+from modules.train import chainer, pytorch
 
 
 def main():
@@ -15,7 +15,11 @@ def main():
         description='Training pose net for comparison \
         between chainer and pytorch about implementing DeepPose.')
     parser.add_argument(
+        'mode', type=str, choices=['chainer', 'pytorch'], help='Mode of training pose net.')
+    parser.add_argument(
         '--Nj', '-j', type=int, default=14, help='Number of joints.')
+    parser.add_argument(
+        '--use-visibility', '-v', type=bool, default=False, help='Use visibility to compute loss.')
     parser.add_argument(
         '--epoch', '-e', type=int, default=100, help='Number of epochs to train.')
     parser.add_argument(
@@ -34,20 +38,24 @@ def main():
     parser.add_argument(
         '--resume', default=None,
         help='Initialize the trainer from given file. \
-        The file name is "epoch-{.updater.epoch}.iter".')
+        The file name is "epoch-{epoch number}.iter".')
     parser.add_argument(
-        '--resume_model', type=str, default=None,
+        '--resume-model', type=str, default=None,
         help='Load model definition file to use for resuming training \
         (it\'s necessary when you resume a training). \
-        The file name is "epoch-{.updater.epoch}.mode"')
+        The file name is "epoch-{epoch number}.mode"')
     parser.add_argument(
-        '--resume_opt', type=str, default=None,
+        '--resume-opt', type=str, default=None,
         help='Load optimization states from this file \
         (it\'s necessary when you resume a training). \
-        The file name is "epoch-{.updater.epoch}.state"')
+        The file name is "epoch-{epoch number}.state"')
     args = parser.parse_args()
     args_dict = vars(args)
-    train = TrainPoseNet(**args_dict)
+    if args.mode == 'chainer':
+        trainer = chainer.TrainPoseNet
+    else:
+        trainer = pytorch.TrainPoseNet
+    train = trainer(**args_dict)
     train.start()
 
 if __name__ == '__main__':

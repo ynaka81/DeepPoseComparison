@@ -14,6 +14,10 @@ class SaveImageFailed(BaseError):
     """ Raise when fail to save error. """
     pass
 
+class GPUNotFoundError(BaseError):
+    """ Raise when GPU is not found. """
+    pass
+
 class UnknownOptimizationMethodError(BaseError):
     """ Raise when the optimization method is unknown. """
     pass
