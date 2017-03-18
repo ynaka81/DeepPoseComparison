@@ -19,7 +19,7 @@ def main():
     parser.add_argument(
         '--Nj', '-j', type=int, default=14, help='Number of joints.')
     parser.add_argument(
-        '--use-visibility', '-v', type=bool, default=False, help='Use visibility to compute loss.')
+        '--use-visibility', '-v', action='store_true', help='Use visibility to compute loss.')
     parser.add_argument(
         '--epoch', '-e', type=int, default=100, help='Number of epochs to train.')
     parser.add_argument(
