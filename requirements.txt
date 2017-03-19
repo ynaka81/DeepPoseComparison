@@ -10,3 +10,4 @@ chainer==1.19.0
 Pillow==3.4.1
 https://s3.amazonaws.com/pytorch/whl/cu75/torch-0.1.10.post2-cp27-none-linux_x86_64.whl
 torchvision==0.1.7
+matplotlib==1.5.1
