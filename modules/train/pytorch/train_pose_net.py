@@ -2,6 +2,7 @@
 """ Train pose net. """
 
 import os
+import time
 from tqdm import tqdm, trange
 import torch
 import torch.optim as optim
@@ -109,7 +110,7 @@ class TrainPoseNet(object):
             optimizer = optim.Adam(model.parameters())
         return optimizer
 
-    def _train(self, model, optimizer, train_iter, log_interval, logger):
+    def _train(self, model, optimizer, train_iter, log_interval, logger, start_time):
         model.train()
         for iteration, batch in enumerate(tqdm(train_iter, desc='this epoch')):
             image, pose, visibility = Variable(batch[0]), Variable(batch[1]), Variable(batch[2])
@@ -121,10 +122,10 @@ class TrainPoseNet(object):
             loss.backward()
             optimizer.step()
             if iteration % log_interval == 0:
-                log = 'Loss: {}'.format(loss.data[0])
+                log = 'elapsed_time: {0}, loss: {1}'.format(time.time() - start_time, loss.data[0])
                 logger.write(log)
 
-    def _test(self, model, test_iter, logger):
+    def _test(self, model, test_iter, logger, start_time):
         model.eval()
         test_loss = 0
         for batch in test_iter:
@@ -134,7 +135,7 @@ class TrainPoseNet(object):
             output = model(image)
             test_loss += mean_squared_error(output, pose, visibility, self.use_visibility).data[0]
         test_loss /= len(test_iter)
-        log = 'Validation/Loss: {}'.format(test_loss)
+        log = 'elapsed_time: {0}, validation/loss: {1}'.format(time.time() - start_time, test_loss)
         logger.write(log)
 
     def _checkpoint(self, epoch, model, optimizer, logger):
@@ -185,9 +186,10 @@ class TrainPoseNet(object):
             start_epoch = resume['epoch']
             logger.load_state_dict(resume['logger'])
         # start training.
+        start_time = time.time()
         for epoch in trange(start_epoch, self.epoch + 1, desc='     total'):
-            self._train(model, optimizer, train_iter, log_interval, logger)
+            self._train(model, optimizer, train_iter, log_interval, logger, start_time)
             if epoch % val_interval == 0:
-                self._test(model, val_iter, logger)
+                self._test(model, val_iter, logger, start_time)
             if epoch % resume_interval == 0:
                 self._checkpoint(epoch, model, optimizer, logger)
