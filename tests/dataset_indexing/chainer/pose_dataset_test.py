@@ -99,7 +99,7 @@ class TestPoseDataset(unittest.TestCase):
         return l
 
     def test_random_noise(self):
-        image = np.random.randint(0, 256, (3, 15, 11))
+        image = np.random.randint(0, 256, (3, 256, 256))
         image = np.array(image, dtype=np.float32)
         l = self._calculate_image_eigen(image)
         diff = []

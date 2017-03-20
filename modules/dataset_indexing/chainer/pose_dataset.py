@@ -90,7 +90,7 @@ class PoseDataset(dataset.DatasetMixin):
         C = np.cov(np.reshape(image, (3, -1)))
         l, e = np.linalg.eig(C)
         l = np.maximum(l, 0)
-        p = np.random.normal(0, 0.1)*np.matrix(e).T*np.sqrt(np.matrix(l)).T
+        p = np.random.normal(0, 0.01)*np.matrix(e).T*np.sqrt(np.matrix(l)).T
         for c in range(3):
             image[c] += p[c]
         image = np.clip(image, 0, 255)
