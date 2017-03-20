@@ -39,11 +39,9 @@ class AlexNet(chainer.Chain):
         """ Predict 2D pose from image. """
         # layer1
         h = F.relu(self.conv1(x))
-        h = F.local_response_normalization(h)
         h = F.max_pooling_2d(h, 3, stride=2)
         # layer2
         h = F.relu(self.conv2(h))
-        h = F.local_response_normalization(h)
         h = F.max_pooling_2d(h, 3, stride=2)
         # layer3-5
         h = F.relu(self.conv3(h))
