@@ -17,7 +17,7 @@ class TestCrop(unittest.TestCase):
     def test_call(self):
         self.transform.data_augmentation = False
         image = torch.range(0, 256*256*3 - 1).view(3, 256, 256)
-        visibility = torch.ones(2, 2).byte()
+        visibility = torch.ones(2, 2)
         # crop on a pose center
         pose = torch.Tensor([[108, 50], [148, 180]])
         transformed_image, transformed_pose, transformed_visibility = self.transform(image, pose, visibility)
@@ -46,7 +46,7 @@ class TestCrop(unittest.TestCase):
         ok_((transformed_pose == correct).all())
         ok_((transformed_visibility == visibility).all())
         # check visibility
-        visibility = torch.ones(3, 2).byte()
+        visibility = torch.ones(3, 2)
         visibility[2] = 0
         pose = torch.Tensor([[108, 50], [148, 180], [250, 250]])
         transformed_image, transformed_pose, transformed_visibility = self.transform(image, pose, visibility)
@@ -60,7 +60,7 @@ class TestCrop(unittest.TestCase):
     def test_call_data_augmentation(self):
         self.transform.data_augmentation = True
         image = torch.zeros(3, 256, 256)
-        visibility = torch.ones(2, 2).byte()
+        visibility = torch.ones(2, 2)
         for i in range(20):
             pose = torch.rand(2, 2)*227
             transformed_image, transformed_pose, transformed_visibility = self.transform(image, pose, visibility)

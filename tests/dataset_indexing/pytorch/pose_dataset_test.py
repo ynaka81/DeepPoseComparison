@@ -26,8 +26,8 @@ class TestPoseDatasetConstructure(unittest.TestCase):
                    torch.Tensor([[50, 60], [70, 80]])]
         for p, c in zip(dataset.poses, correct):
             ok_((p == c).all())
-        correct = [torch.ByteTensor([[0, 0], [1, 1]]),
-                   torch.ByteTensor([[1, 1], [0, 0]])]
+        correct = [torch.Tensor([[0, 0], [1, 1]]),
+                   torch.Tensor([[1, 1], [0, 0]])]
         for v, c in zip(dataset.visibilities, correct):
             ok_((v == c).all())
 
@@ -65,16 +65,16 @@ class TestPoseDataset(unittest.TestCase):
         eq_(image.mode, 'RGB')
         eq_(type(pose), torch.FloatTensor)
         ok_((pose == torch.Tensor([[108, 50], [148, 180], [148, 180]])).all())
-        eq_(type(visibility), torch.ByteTensor)
-        ok_((visibility == torch.ByteTensor([[1, 1], [0, 0], [1, 1]])).all())
+        eq_(type(visibility), torch.FloatTensor)
+        ok_((visibility == torch.Tensor([[1, 1], [0, 0], [1, 1]])).all())
         image, pose, visibility = self.dataset[1]
         eq_(type(image), Image.Image)
         eq_(image.size, (256, 256))
         eq_(image.mode, 'RGB')
         eq_(type(pose), torch.FloatTensor)
         ok_((pose == torch.Tensor([[40, 50], [160, 180], [160, 180]])).all())
-        eq_(type(visibility), torch.ByteTensor)
-        ok_((visibility == torch.ByteTensor([[1, 1], [1, 1], [0, 0]])).all())
+        eq_(type(visibility), torch.FloatTensor)
+        ok_((visibility == torch.Tensor([[1, 1], [1, 1], [0, 0]])).all())
 
 class TestPoseDatasetWithTransform(unittest.TestCase):
 
@@ -104,14 +104,14 @@ class TestPoseDatasetWithTransform(unittest.TestCase):
         eq_(image.size(), (3, 227, 227))
         eq_(type(pose), torch.FloatTensor)
         ok_(torch.dist(pose, torch.Tensor([[94, 49], [134, 179], [134, 179]])/227) < 1.e-5)
-        eq_(type(visibility), torch.ByteTensor)
-        ok_((visibility == torch.ByteTensor([[1, 1], [0, 0], [1, 1]])).all())
+        eq_(type(visibility), torch.FloatTensor)
+        ok_((visibility == torch.Tensor([[1, 1], [0, 0], [1, 1]])).all())
         image, pose, visibility = self.dataset[1]
         eq_(type(image), torch.FloatTensor)
         eq_(image.size(), (3, 227, 227))
         ok_(torch.dist(pose, torch.Tensor([[40, 49], [160, 179], [160, 179]])/227) < 1.e-5)
-        eq_(type(visibility), torch.ByteTensor)
-        ok_((visibility == torch.ByteTensor([[1, 1], [1, 1], [0, 0]])).all())
+        eq_(type(visibility), torch.FloatTensor)
+        ok_((visibility == torch.Tensor([[1, 1], [1, 1], [0, 0]])).all())
 
 class TestPoseDatasetWithTransformDataAugmentation(unittest.TestCase):
 
@@ -146,7 +146,7 @@ class TestPoseDatasetWithTransformDataAugmentation(unittest.TestCase):
             eq_(type(pose), torch.FloatTensor)
             ok_((pose >= 0).all())
             ok_((pose <= 1).all())
-            eq_(type(visibility), torch.ByteTensor)
+            eq_(type(visibility), torch.FloatTensor)
             eq_(visibility.size(), (3, 2))
             for j in range(3):
                 eq_(visibility[j].sum(), visibility[j, 0]*2)

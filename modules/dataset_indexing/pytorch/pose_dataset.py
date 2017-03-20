@@ -51,7 +51,7 @@ class PoseDataset(data.Dataset):
             x = torch.Tensor(map(float, line_split[1:]))
             x = x.view(-1, 3)
             pose = x[:, :2]
-            visibility = x[:, 2].byte().view(-1, 1).expand_as(pose)
+            visibility = x[:, 2].clone().view(-1, 1).expand_as(pose)
             poses.append(pose)
             visibilities.append(visibility)
         return images, poses, visibilities

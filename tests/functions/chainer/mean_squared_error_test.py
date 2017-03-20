@@ -37,7 +37,7 @@ class TestMeanSquaredError(unittest.TestCase):
                 diff *= self.v[i[:-1]]
             loss_expect += diff**2
         if use_visibility:
-            N = self.v.sum()
+            N = self.v.sum()/2
         else:
             N = self.x.size/2
         loss_expect /= N

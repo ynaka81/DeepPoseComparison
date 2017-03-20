@@ -15,14 +15,14 @@ class MeanSquaredError(nn.Module):
     # pylint: disable=arguments-differ
     def forward(self, *inputs):
         x, t, v = inputs
+        diff = x - t
         if self.use_visibility:
-            X = torch.masked_select(x, v)
-            T = torch.masked_select(t, v)
+            N = (v.sum()/2).data[0]
+            diff = diff*v
         else:
-            X = x.view(-1)
-            T = t.view(-1)
-        diff = T - X
-        return diff.dot(diff)/diff.numel()
+            N = diff.numel()/2
+        diff = diff.view(-1)
+        return diff.dot(diff)/N
 
 def mean_squared_error(x, t, v, use_visibility=False):
     """ Computes mean squared error over the minibatch.

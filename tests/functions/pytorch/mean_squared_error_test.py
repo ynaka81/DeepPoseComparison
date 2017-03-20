@@ -14,7 +14,7 @@ class TestMeanSquaredError(unittest.TestCase):
     def setUp(self):
         self.x = torch.rand(10, 14, 2)
         self.t = torch.rand(10, 14, 2)
-        self.v = torch.bernoulli(torch.rand(10, 14, 1)).expand(10, 14, 2).byte()
+        self.v = torch.bernoulli(torch.rand(10, 14, 1)).expand(10, 14, 2).clone()
 
     def check_forward(self, x_data, t_data, v_data, use_visibility):
         x = Variable(x_data)
@@ -33,6 +33,7 @@ class TestMeanSquaredError(unittest.TestCase):
             diff = t_i - x_i
             loss_expect += diff**2
             N += 1
+        N /= 2
         loss_expect /= N
         self.assertAlmostEqual(loss_expect, loss, places=5)
 

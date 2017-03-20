@@ -22,7 +22,7 @@ class Crop(object):
     def __call__(self, image, pose, visibility):
         _, height, width = image.size()
         shape = (width, height)
-        visible_pose = torch.masked_select(pose, visibility).view(-1, 2)
+        visible_pose = torch.masked_select(pose, visibility.byte()).view(-1, 2)
         p_min = visible_pose.min(0)[0].squeeze()
         p_max = visible_pose.max(0)[0].squeeze()
         p_c = (p_min + p_max)/2
