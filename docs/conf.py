@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # modules documentation build configuration file, created by
-# sphinx-quickstart on Wed Feb 15 07:17:34 2017.
+# sphinx-quickstart on Mon Mar 20 15:21:11 2017.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
@@ -17,7 +17,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 import sys
-sys.path.insert(0, u'../modules')
+sys.path.insert(0, u'../')
 
 
 # -- General configuration ------------------------------------------------

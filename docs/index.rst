@@ -1,5 +1,5 @@
 .. modules documentation master file, created by
-   sphinx-quickstart on Wed Feb 15 07:17:34 2017.
+   sphinx-quickstart on Mon Mar 20 15:21:11 2017.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
@@ -10,7 +10,7 @@ Welcome to modules's documentation!
    :maxdepth: 4
    :caption: Contents:
 
-   datasets
+   modules
 
 
 Indices and tables
