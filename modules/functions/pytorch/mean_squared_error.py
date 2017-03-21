@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """ Mean squared error function. """
 
-import torch
 import torch.nn as nn
 
 
