@@ -49,6 +49,7 @@ class RandomNoise(object):
         numpy_image = image.numpy()
         # add random noise to keep eigen value.
         C = np.cov(np.reshape(numpy_image, (3, -1)))
+        C = (C + C.T)/2
         l, e = np.linalg.eig(C)
         l = np.maximum(l, 0)
         p = np.random.normal(0, 0.01)*np.matrix(e).T*np.sqrt(np.matrix(l)).T
