@@ -38,7 +38,7 @@ class MeanSquaredError(function.Function):
         x, t, v = inputs
         self.diff = x - t
         if self.use_visibility:
-            self.N = v.sum()
+            self.N = int(v.sum())/2
             self.diff *= v
         else:
             self.N = self.diff.size/2
