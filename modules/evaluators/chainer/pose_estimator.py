@@ -3,7 +3,7 @@
 
 import numpy as np
 import chainer
-from chainer import serializers
+from chainer import cuda, serializers
 
 from modules.dataset_indexing.chainer import PoseDataset
 from modules.models.chainer import AlexNet
@@ -22,9 +22,10 @@ class PoseEstimator(object):
     def __init__(self, Nj, gpu, model_file, filename):
         # initialize model to estimate.
         self.model = AlexNet(Nj)
+        self.gpu = gpu
         serializers.load_npz(model_file, self.model)
         # prepare gpu.
-        if gpu >= 0:
+        if self.gpu >= 0:
             chainer.cuda.get_device(gpu).use()
             self.model.to_gpu()
         # load dataset to estimate.
@@ -37,4 +38,7 @@ class PoseEstimator(object):
     def estimate(self, index):
         """ Estimate pose of i-th image. """
         image, _, _ = self.dataset.get_example(index)
-        self.model.predict(np.array([image]))
+        v_image = np.array([image])
+        if self.gpu >= 0:
+            v_image = cuda.to_gpu(v_image)
+        self.model.predict(v_image)
