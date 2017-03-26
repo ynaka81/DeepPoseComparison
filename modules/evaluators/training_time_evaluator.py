@@ -36,8 +36,9 @@ class TrainingTimeEvaluator(object):
         # plot settings.
         plt.title(title)
         plt.legend()
-        plt.xlabel('training time [sec]')
+        plt.xlabel('(log scale) training time [sec]')
         plt.ylabel('loss function value')
+        plt.xscale('log')
         # save plot.
         if debug:
             plt.show()
