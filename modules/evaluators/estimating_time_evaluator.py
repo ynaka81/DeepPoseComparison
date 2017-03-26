@@ -15,6 +15,7 @@ class EstimatingTimeEvaluator(object):
 
     Args:
         Nj (int): Number of joints.
+        gpu (int): GPU ID (negative value indicates CPU).
         chainer_model_file (str): Chainer model parameter file.
         pytorch_model_file (str): Pytorch model parameter file.
         filename (str): Image-pose list file.
@@ -30,9 +31,9 @@ class EstimatingTimeEvaluator(object):
             pass
         self.estimator = {
             'chainer': chainer.PoseEstimator(
-                kwargs['Nj'], kwargs['chainer_model_file'], kwargs['filename']),
+                kwargs['Nj'], kwargs['gpu'], kwargs['chainer_model_file'], kwargs['filename']),
             'pytorch': pytorch.PoseEstimator(
-                kwargs['Nj'], kwargs['pytorch_model_file'], kwargs['filename'])}
+                kwargs['Nj'], kwargs['gpu'], kwargs['pytorch_model_file'], kwargs['filename'])}
         self.debug = kwargs['debug']
 
     def plot(self, samples, title):

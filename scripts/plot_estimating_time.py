@@ -20,6 +20,8 @@ def main():
     parser.add_argument(
         '--Nj', '-j', type=int, default=14, help='Number of joints.')
     parser.add_argument(
+        '--gpu', '-g', type=int, default=-1, help='GPU ID (negative value indicates CPU).')
+    parser.add_argument(
         '--chainer-model-file', '-c', type=str,
         default='result/chainer/epoch-100.model', help='Chainer model parameter file.')
     parser.add_argument(
