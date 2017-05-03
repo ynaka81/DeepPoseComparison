@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# pylint: skip-file
 
 import unittest
 from nose.tools import eq_, ok_
@@ -30,6 +29,7 @@ class TestPoseDatasetConstructure(unittest.TestCase):
                    torch.Tensor([[1, 1], [0, 0]])]
         for v, c in zip(dataset.visibilities, correct):
             ok_((v == c).all())
+
 
 class TestPoseDataset(unittest.TestCase):
 
@@ -76,6 +76,7 @@ class TestPoseDataset(unittest.TestCase):
         eq_(type(visibility), torch.FloatTensor)
         ok_((visibility == torch.Tensor([[1, 1], [1, 1], [0, 0]])).all())
 
+
 class TestPoseDatasetWithTransform(unittest.TestCase):
 
     @patch('modules.dataset_indexing.pytorch.pose_dataset.open')
@@ -112,6 +113,7 @@ class TestPoseDatasetWithTransform(unittest.TestCase):
         ok_(torch.dist(pose, torch.Tensor([[40, 49], [160, 179], [160, 179]])/227) < 1.e-5)
         eq_(type(visibility), torch.FloatTensor)
         ok_((visibility == torch.Tensor([[1, 1], [1, 1], [0, 0]])).all())
+
 
 class TestPoseDatasetWithTransformDataAugmentation(unittest.TestCase):
 

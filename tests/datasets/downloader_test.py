@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# pylint: skip-file
 
 import os
 import unittest
@@ -23,6 +22,7 @@ class TestLSPDatasetDownloaderConstructure(unittest.TestCase):
     @patch('os.makedirs', side_effect=OSError)
     def test_init_directory_exist(self, mock):
         self._test_init(mock)
+
 
 class TestLSPDatasetDownloader(unittest.TestCase):
 

@@ -11,7 +11,6 @@ class MeanSquaredError(nn.Module):
         super(MeanSquaredError, self).__init__()
         self.use_visibility = use_visibility
 
-    # pylint: disable=arguments-differ
     def forward(self, *inputs):
         x, t, v = inputs
         diff = x - t
@@ -22,6 +21,7 @@ class MeanSquaredError(nn.Module):
             N = diff.numel()/2
         diff = diff.view(-1)
         return diff.dot(diff)/N
+
 
 def mean_squared_error(x, t, v, use_visibility=False):
     """ Computes mean squared error over the minibatch.

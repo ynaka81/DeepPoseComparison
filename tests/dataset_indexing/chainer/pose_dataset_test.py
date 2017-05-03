@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# pylint: skip-file
 
 import unittest
 from nose.tools import eq_, ok_
@@ -21,15 +20,16 @@ class TestPoseDatasetConstructure(unittest.TestCase):
         dataset = PoseDataset('test_data')
         eq_(dataset.images, ['image1.png', 'image2.png'])
         correct = [np.array([[1, 2],
-                              [3, 4]], dtype=np.float32),
+                             [3, 4]], dtype=np.float32),
                    np.array([[5, 6],
-                              [7, 8]], dtype=np.float32)]
+                             [7, 8]], dtype=np.float32)]
         for p, c in zip(dataset.poses, correct):
             ok_((p == c).all())
         correct = [np.array([[0], [1]], dtype=np.int32),
-                   np.array([[1], [0]], dtype = np.int32)]
+                   np.array([[1], [0]], dtype=np.int32)]
         for v, c in zip(dataset.visibilities, correct):
             ok_((v == c).all())
+
 
 class TestPoseDataset(unittest.TestCase):
 

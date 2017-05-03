@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# pylint: skip-file
 
 import unittest
 from nose.tools import eq_, nottest

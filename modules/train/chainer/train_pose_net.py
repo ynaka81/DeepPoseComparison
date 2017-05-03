@@ -25,7 +25,7 @@ class TestModeEvaluator(extensions.Evaluator):
         model.train = True
         return ret
 
-# pylint: disable=too-many-instance-attributes
+
 class TrainPoseNet(object):
     """ Train pose net of estimating 2D pose from image.
 
@@ -51,7 +51,6 @@ class TrainPoseNet(object):
             The file name is 'epoch-{epoch number}.state'.
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(self, **kwargs):
         self.Nj = kwargs['Nj']
         self.use_visibility = kwargs['use_visibility']

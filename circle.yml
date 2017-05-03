@@ -11,12 +11,12 @@ general:
 
 dependencies:
   pre:
-    - pip install pyflakes pylint
+    - pip install pyflakes pycodestyle
     - pip install sphinx
 
 test:
   pre:
     - pyflakes modules
-    - pylint modules
+    - pycodestyle modules tests
   post:
     - cd docs && make html

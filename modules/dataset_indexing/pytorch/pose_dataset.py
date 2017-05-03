@@ -6,7 +6,6 @@ import torch
 from torch.utils import data
 
 
-# pylint: disable=too-few-public-methods
 class PoseDataset(data.Dataset):
     """ Pose dataset indexing.
 

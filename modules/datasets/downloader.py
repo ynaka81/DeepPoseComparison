@@ -41,7 +41,6 @@ class LSPDatasetDownloader(object):
         with zipfile.ZipFile(path, 'r') as zip_file:
             zip_file.extractall(extract_path)
 
-    # pylint: disable=no-self-use
     def _cleanup(self, path):
         os.remove(path)
 

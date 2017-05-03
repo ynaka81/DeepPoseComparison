@@ -2,7 +2,6 @@
 """ Training log of pytorch. """
 
 
-# pylint: disable=too-few-public-methods
 class TrainingLog(object):
     """ Training log of pose net by pytorch.
 

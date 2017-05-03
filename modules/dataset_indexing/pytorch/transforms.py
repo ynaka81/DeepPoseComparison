@@ -6,7 +6,6 @@ import numpy as np
 import torch
 
 
-# pylint: disable=too-few-public-methods
 class Crop(object):
     """ Crops the given PIL.Image to have a region of the given size.
 
@@ -40,7 +39,7 @@ class Crop(object):
         transformed_pose = pose - p_0
         return transformed_image, transformed_pose, visibility
 
-# pylint: disable=too-few-public-methods
+
 class RandomNoise(object):
     """ Give random noise to the given PIL.Image.
     """
@@ -59,7 +58,7 @@ class RandomNoise(object):
         # return augmented data.
         return torch.Tensor(numpy_image)
 
-# pylint: disable=too-few-public-methods
+
 class Scale(object):
     """ Divide the input pose by the given value.
 

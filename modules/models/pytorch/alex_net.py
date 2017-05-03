@@ -5,7 +5,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-# pylint: disable=too-many-instance-attributes
 class AlexNet(nn.Module):
     """ The AlexNet :
     'A. Krizhevsky, I. Sutskever, and G. Hinton.
@@ -27,7 +26,6 @@ class AlexNet(nn.Module):
         self.fc8 = nn.Linear(4096, Nj*2)
         self.Nj = Nj
 
-    # pylint: disable=arguments-differ
     def forward(self, x):
         # layer1
         h = F.relu(self.conv1(x))

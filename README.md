@@ -36,7 +36,7 @@ python scripts/plot_estimating_time.py 10000 "title of graph"
 
 ## Install
 ```
-pip install pyflakes pylint
+pip install pyflakes pycodestyle
 pip install sphinx
 pip install -r requirements.txt
 ```

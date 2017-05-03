@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# pylint: skip-file
 
 import os
 import unittest
@@ -26,6 +25,7 @@ class TestLSPDatasetGeneratorConstructure(unittest.TestCase):
     def test_init_directory_exist(self, mock):
         self._test_init(mock)
 
+
 class TestLSPDatasetDownloader(unittest.TestCase):
 
     @patch('os.makedirs')
@@ -37,7 +37,7 @@ class TestLSPDatasetDownloader(unittest.TestCase):
     def tearDown(self):
         pass
 
-    @patch('modules.datasets.generator.loadmat', return_value={'joints':np.zeros((3, 14, 10))})
+    @patch('modules.datasets.generator.loadmat', return_value={'joints': np.zeros((3, 14, 10))})
     def test_load_joints_lsp(self, mock):
         dataset_name = 'lsp_dataset'
         joints = self.generator._load_joints(dataset_name)
@@ -47,7 +47,7 @@ class TestLSPDatasetDownloader(unittest.TestCase):
         ok_((joints == correct).all())
         mock.assert_called_once_with(os.path.join(self.path, dataset_name, 'joints.mat'))
 
-    @patch('modules.datasets.generator.loadmat', return_value={'joints':np.zeros((14, 3, 10))})
+    @patch('modules.datasets.generator.loadmat', return_value={'joints': np.zeros((14, 3, 10))})
     def test_load_joints_lspet(self, mock):
         dataset_name = 'lspet_dataset'
         joints = self.generator._load_joints(dataset_name)

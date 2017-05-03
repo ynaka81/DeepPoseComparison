@@ -106,13 +106,11 @@ class LSPDatasetGenerator(object):
             raise SaveImageFailed('Failed to save {0}.'.format(image_path))
         return image_path
 
-    # pylint: disable=no-self-use
     def _get_data_label(self, dataset_name, i):
         if dataset_name == 'lsp_dataset' and i > 1000:
             return 'test'
         return 'train'
 
-    # pylint: disable=no-self-use
     def _make_dataset_line(self, image_path, joint):
         joint_list = ','.join(map(str, joint.flatten()))
         # format: image_filename, x_0, y_0, v_0, x_1, ...

@@ -50,6 +50,7 @@ class MeanSquaredError(function.Function):
         gx0 = coeff*self.diff
         return gx0, -gx0, None
 
+
 def mean_squared_error(x, t, v, use_visibility=False):
     """ Computes mean squared error over the minibatch.
 

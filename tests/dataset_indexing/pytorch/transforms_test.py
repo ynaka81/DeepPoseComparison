@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# pylint: skip-file
 
 import unittest
 from nose.tools import eq_, ok_
@@ -70,6 +69,7 @@ class TestCrop(unittest.TestCase):
             ok_((transformed_pose <= 227).all())
             ok_((transformed_visibility == visibility).all())
 
+
 class TestRandomNoise(unittest.TestCase):
 
     def setUp(self):
@@ -94,6 +94,7 @@ class TestRandomNoise(unittest.TestCase):
             l_noise = self._calculate_image_eigen(noise_image.numpy())
             diff.append(np.linalg.norm(l - l_noise))
         self.assertAlmostEqual(np.mean(diff), 0, delta=0.1*np.linalg.norm(l))
+
 
 class TestScale(unittest.TestCase):
 

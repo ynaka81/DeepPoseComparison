@@ -34,7 +34,6 @@ class AlexNet(chainer.Chain):
         self.use_visibility = use_visibility
         self.train = True
 
-    # pylint: disable=no-member
     def predict(self, x):
         """ Predict 2D pose from image. """
         # layer1
