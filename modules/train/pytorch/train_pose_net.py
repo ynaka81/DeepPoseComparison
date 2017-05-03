@@ -35,6 +35,7 @@ class TrainLogger(object):
         """ Write log. """
         tqdm.write(log)
         tqdm.write(log, file=self.file)
+        self.file.flush()
         self.logs.append(log)
 
     def state_dict(self):
