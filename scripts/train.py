@@ -21,12 +21,16 @@ def main():
     parser.add_argument(
         '--use-visibility', '-v', action='store_true', help='Use visibility to compute loss.')
     parser.add_argument(
+        '--data-augmentation', '-a', action='store_true', help='Crop randomly and add random noise for data augmentation.')
+    parser.add_argument(
         '--epoch', '-e', type=int, default=100, help='Number of epochs to train.')
     parser.add_argument(
         '--opt', '-o', type=str, default='MomentumSGD',
         choices=['MomentumSGD', 'Adam'], help='Optimization method.')
     parser.add_argument(
         '--gpu', '-g', type=int, default=-1, help='GPU ID (negative value indicates CPU).')
+    parser.add_argument(
+        '--seed', '-s', type=int, help='Random seed to train.')
     parser.add_argument(
         '--train', type=str, default='data/train', help='Path to training image-pose list file.')
     parser.add_argument(

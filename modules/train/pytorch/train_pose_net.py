@@ -2,6 +2,7 @@
 """ Train pose net. """
 
 import os
+import random
 import time
 from tqdm import tqdm, trange
 import torch
@@ -9,7 +10,7 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import transforms
 
-from modules.errors import FileNotFoundError, GPUNotFoundError, UnknownOptimizationMethodError
+from modules.errors import FileNotFoundError, GPUNotFoundError, UnknownOptimizationMethodError, NotSupportedError
 from modules.models.pytorch import AlexNet
 from modules.dataset_indexing.pytorch import PoseDataset, Crop, RandomNoise, Scale
 from modules.functions.pytorch import mean_squared_error
@@ -55,9 +56,11 @@ class TrainPoseNet(object):
     Args:
         Nj (int): Number of joints.
         use_visibility (bool): Use visibility to compute loss.
+        data-augmentation (bool): Crop randomly and add random noise for data augmentation.
         epoch (int): Number of epochs to train.
         opt (str): Optimization method.
         gpu (bool): Use GPU.
+        seed (str): Random seed to train.
         train (str): Path to training image-pose list file.
         val (str): Path to validation image-pose list file.
         batchsize (int): Learning minibatch size.
@@ -76,9 +79,11 @@ class TrainPoseNet(object):
     def __init__(self, **kwargs):
         self.Nj = kwargs['Nj']
         self.use_visibility = kwargs['use_visibility']
+        self.data_augmentation = kwargs['data_augmentation']
         self.epoch = kwargs['epoch']
         self.gpu = (kwargs['gpu'] >= 0)
         self.opt = kwargs['opt']
+        self.seed = kwargs['seed']
         self.train = kwargs['train']
         self.val = kwargs['val']
         self.batchsize = kwargs['batchsize']
@@ -90,6 +95,8 @@ class TrainPoseNet(object):
         self._validate_arguments()
 
     def _validate_arguments(self):
+        if self.seed is not None and self.data_augmentation:
+            raise NotSupportedError('It is not supported to fix random seed for data augmentation.')
         if self.gpu and not torch.cuda.is_available():
             raise GPUNotFoundError('GPU is not found.')
         for path in (self.train, self.val):
@@ -146,6 +153,12 @@ class TrainPoseNet(object):
 
     def start(self):
         """ Train pose net. """
+        # set random seed.
+        if self.seed is not None:
+            random.seed(self.seed)
+            torch.manual_seed(self.seed)
+            if self.gpu:
+                torch.cuda.manual_seed(self.seed)
         # initialize model to train.
         model = AlexNet(self.Nj)
         if self.resume_model:
@@ -154,13 +167,14 @@ class TrainPoseNet(object):
         if self.gpu:
             model.cuda()
         # load the datasets.
+        input_transforms = [transforms.ToTensor()]
+        if self.data_augmentation:
+            input_transforms.append(RandomNoise())
         train = PoseDataset(
             self.train,
-            input_transform=transforms.Compose([
-                transforms.ToTensor(),
-                RandomNoise()]),
+            input_transform=transforms.Compose(input_transforms),
             output_transform=Scale(),
-            transform=Crop(data_augmentation=True))
+            transform=Crop(data_augmentation=self.data_augmentation))
         val = PoseDataset(
             self.val,
             input_transform=transforms.Compose([
@@ -168,7 +182,8 @@ class TrainPoseNet(object):
             output_transform=Scale(),
             transform=Crop(data_augmentation=False))
         # training/validation iterators.
-        train_iter = torch.utils.data.DataLoader(train, batch_size=self.batchsize, shuffle=True)
+        # train_iter = torch.utils.data.DataLoader(train, batch_size=self.batchsize, shuffle=True)
+        train_iter = torch.utils.data.DataLoader(train, batch_size=self.batchsize, shuffle=False)
         val_iter = torch.utils.data.DataLoader(val, batch_size=self.batchsize, shuffle=False)
         # set up an optimizer.
         optimizer = self._get_optimizer(model)

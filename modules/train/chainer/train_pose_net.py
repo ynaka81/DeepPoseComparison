@@ -2,13 +2,14 @@
 """ Train pose net. """
 
 import os
+import random
 import chainer
 from chainer import optimizers
 from chainer import training
 from chainer.training import extensions
 from chainer import serializers
 
-from modules.errors import FileNotFoundError, UnknownOptimizationMethodError
+from modules.errors import FileNotFoundError, UnknownOptimizationMethodError, NotSupportedError
 from modules.models.chainer import AlexNet
 from modules.dataset_indexing.chainer import PoseDataset
 
@@ -31,9 +32,11 @@ class TrainPoseNet(object):
     Args:
         Nj (int): Number of joints.
         use_visibility (bool): Use visibility to compute loss.
+        data-augmentation (bool): Crop randomly and add random noise for data augmentation.
         epoch (int): Number of epochs to train.
         opt (str): Optimization method.
         gpu (int): GPU ID (negative value indicates CPU).
+        seed (str): Random seed to train.
         train (str): Path to training image-pose list file.
         val (str): Path to validation image-pose list file.
         batchsize (int): Learning minibatch size.
@@ -52,9 +55,11 @@ class TrainPoseNet(object):
     def __init__(self, **kwargs):
         self.Nj = kwargs['Nj']
         self.use_visibility = kwargs['use_visibility']
+        self.data_augmentation = kwargs['data_augmentation']
         self.epoch = kwargs['epoch']
         self.gpu = kwargs['gpu']
         self.opt = kwargs['opt']
+        self.seed = kwargs['seed']
         self.train = kwargs['train']
         self.val = kwargs['val']
         self.batchsize = kwargs['batchsize']
@@ -66,6 +71,8 @@ class TrainPoseNet(object):
         self._validate_arguments()
 
     def _validate_arguments(self):
+        if self.seed is not None and self.data_augmentation:
+            raise NotSupportedError('It is not supported to fix random seed for data augmentation.')
         for path in (self.train, self.val):
             if not os.path.isfile(path):
                 raise FileNotFoundError('{0} is not found.'.format(path))
@@ -94,8 +101,13 @@ class TrainPoseNet(object):
         if self.gpu >= 0:
             chainer.cuda.get_device(self.gpu).use()
             model.to_gpu()
+        # set random seed.
+        if self.seed is not None:
+            random.seed(self.seed)
+            xp = chainer.cuda.get_array_module(model)
+            xp.random.seed(self.seed)
         # load the datasets.
-        train = PoseDataset(self.train)
+        train = PoseDataset(self.train, data_augmentation=self.data_augmentation)
         val = PoseDataset(self.val, data_augmentation=False)
         # training/validation iterators.
         train_iter = chainer.iterators.MultiprocessIterator(
