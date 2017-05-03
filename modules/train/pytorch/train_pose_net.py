@@ -119,7 +119,7 @@ class TrainPoseNet(object):
 
     def _train(self, model, optimizer, train_iter, log_interval, logger, start_time):
         model.train()
-        for iteration, batch in enumerate(tqdm(train_iter, desc='this epoch')):
+        for iteration, batch in enumerate(tqdm(train_iter, desc='this epoch'), 1):
             image, pose, visibility = Variable(batch[0]), Variable(batch[1]), Variable(batch[2])
             if self.gpu:
                 image, pose, visibility = image.cuda(), pose.cuda(), visibility.cuda()
@@ -182,8 +182,7 @@ class TrainPoseNet(object):
             output_transform=Scale(),
             transform=Crop(data_augmentation=False))
         # training/validation iterators.
-        # train_iter = torch.utils.data.DataLoader(train, batch_size=self.batchsize, shuffle=True)
-        train_iter = torch.utils.data.DataLoader(train, batch_size=self.batchsize, shuffle=False)
+        train_iter = torch.utils.data.DataLoader(train, batch_size=self.batchsize, shuffle=True)
         val_iter = torch.utils.data.DataLoader(val, batch_size=self.batchsize, shuffle=False)
         # set up an optimizer.
         optimizer = self._get_optimizer(model)
