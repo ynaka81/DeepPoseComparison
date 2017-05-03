@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-from nose.tools import eq_
+from nose.tools import eq_, ok_
 import torch
-from torch.autograd import Variable
+from torch.autograd import Variable, gradcheck
 
 from modules.functions.pytorch import mean_squared_error
+from modules.functions.pytorch.mean_squared_error import MeanSquaredError
 
 
 class TestMeanSquaredError(unittest.TestCase):
@@ -36,6 +37,19 @@ class TestMeanSquaredError(unittest.TestCase):
         loss_expect /= N
         self.assertAlmostEqual(loss_expect, loss, places=5)
 
-    def test_forward_cpu(self):
+    def test_forward(self):
         self.check_forward(self.x, self.t, self.v, False)
         self.check_forward(self.x, self.t, self.v, True)
+
+    def check_backward(self, x_data, t_data, v_data, use_visibility):
+        x = Variable(x_data, requires_grad=True)
+        t = Variable(t_data)
+        v = Variable(v_data)
+        test = gradcheck(
+            MeanSquaredError(use_visibility),
+            (x, t, v), eps=1e-2, atol=1e-3)
+        ok_(test)
+
+    def test_bakward(self):
+        self.check_backward(self.x, self.t, self.v, False)
+        self.check_backward(self.x, self.t, self.v, True)

@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """ Mean squared error function. """
 
-import torch.nn as nn
+import torch
+from torch.autograd import Function
 
 
-class MeanSquaredError(nn.Module):
+class MeanSquaredError(Function):
     """ Mean squared error (a.k.a. Euclidean loss) function. """
 
     def __init__(self, use_visibility=False):
@@ -13,14 +14,19 @@ class MeanSquaredError(nn.Module):
 
     def forward(self, *inputs):
         x, t, v = inputs
-        diff = x - t
+        self.diff = x - t
         if self.use_visibility:
-            N = (v.sum()/2).data[0]
-            diff = diff*v
+            self.N = v.sum()/2
+            self.diff = self.diff*v
         else:
-            N = diff.numel()/2
-        diff = diff.view(-1)
-        return diff.dot(diff)/N
+            self.N = self.diff.numel()/2
+        diff = self.diff.view(-1)
+        return torch.Tensor([diff.dot(diff)/self.N])
+
+    def backward(self, *grad_outputs):
+        coeff = grad_outputs[0][0]*2/self.N
+        gx0 = coeff*self.diff
+        return gx0, None, None
 
 
 def mean_squared_error(x, t, v, use_visibility=False):
