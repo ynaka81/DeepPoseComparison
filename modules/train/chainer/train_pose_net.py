@@ -3,6 +3,7 @@
 
 import os
 import random
+import numpy as np
 import chainer
 from chainer import optimizers
 from chainer import training
@@ -92,6 +93,12 @@ class TrainPoseNet(object):
 
     def start(self):
         """ Train pose net. """
+        # set random seed.
+        if self.seed is not None:
+            random.seed(self.seed)
+            np.random.seed(self.seed)
+            if self.gpu >= 0:
+                chainer.cuda.cupy.random.seed(self.seed)
         # initialize model to train.
         model = AlexNet(self.Nj, self.use_visibility)
         if self.resume_model:
@@ -100,11 +107,6 @@ class TrainPoseNet(object):
         if self.gpu >= 0:
             chainer.cuda.get_device(self.gpu).use()
             model.to_gpu()
-        # set random seed.
-        if self.seed is not None:
-            random.seed(self.seed)
-            xp = chainer.cuda.get_array_module(model)
-            xp.random.seed(self.seed)
         # load the datasets.
         train = PoseDataset(self.train, data_augmentation=self.data_augmentation)
         val = PoseDataset(self.val, data_augmentation=False)
