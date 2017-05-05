@@ -5,7 +5,7 @@ import argparse
 import sys
 
 sys.path.append("./")
-from modules.datasets import LSPDatasetDownloader, LSPDatasetGenerator
+from modules.datasets import DatasetGenerator
 
 
 def main():
@@ -24,10 +24,9 @@ def main():
         "--output", "-o", type=str, default="data", help="An output path for generated datasets.")
     # main process
     args = parser.parse_args()
-    downloader = LSPDatasetDownloader(args.path)
-    generator = LSPDatasetGenerator(args.image_size, args.crop_size, args.path, args.output)
-    downloader.download()
+    generator = DatasetGenerator(args.image_size, args.crop_size, args.path, args.output)
     generator.generate()
+
 
 if __name__ == '__main__':
     main()

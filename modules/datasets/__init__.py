@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-""" Generating LSP dataset module. """
+""" Generating dataset module. """
 
-from modules.datasets.downloader import LSPDatasetDownloader
-from modules.datasets.generator import LSPDatasetGenerator
+from modules.datasets.generator import DatasetGenerator
 
 
-__all__ = ['LSPDatasetDownloader', 'LSPDatasetGenerator']
+__all__ = ['DatasetGenerator']

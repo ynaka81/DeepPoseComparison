@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
-""" Generate LSP dataset. """
+""" Generate dataset. """
 
 import os
 import cv2
 import numpy as np
-from scipy.io import loadmat
-from tqdm import tqdm
+import tqdm
 
-from modules.errors import FileNotFoundError, SaveImageFailed
+from modules.errors import SaveImageFailed
+from modules.datasets.lsp.dataset import LSPDataset
+from modules.datasets.lspet.dataset import LSPETDataset
 
 
-class LSPDatasetGenerator(object):
-    """ Generate LSP dataset from
-    'Leeds Sports Pose Dataset' and 'Leeds Sports Pose Extended Training Dataset'
+class DatasetGenerator(object):
+    """ Generate dataset from LSP and LSPET datasets.
 
     Args:
         image_size (int): Size of output image.
@@ -22,7 +22,6 @@ class LSPDatasetGenerator(object):
     """
 
     def __init__(self, image_size=256, crop_size=227, path='orig_data', output='data'):
-        """ Constructor of generator. """
         try:
             os.makedirs(os.path.join(output, 'images'))
         except OSError:
@@ -31,27 +30,7 @@ class LSPDatasetGenerator(object):
         self.crop_size = crop_size
         self.path = path
         self.output = output
-        self.dataset = ['lsp_dataset', 'lspet_dataset']
-
-    def _load_joints(self, dataset_name):
-        joints = loadmat(os.path.join(self.path, dataset_name, 'joints.mat'))['joints']
-        if dataset_name == 'lsp_dataset':
-            joints = joints.transpose(2, 1, 0)
-            joints[:, :, 2] = np.logical_not(joints[:, :, 2]).astype(int)
-        else:
-            joints = joints.transpose(2, 0, 1)
-        return joints
-
-    def _load_image(self, dataset_name, i):
-        if dataset_name == 'lsp_dataset':
-            image_file = 'im{0:04d}.jpg'.format(i)
-        else:
-            image_file = 'im{0:05d}.jpg'.format(i)
-        path = os.path.join(self.path, dataset_name, 'images', image_file)
-        image = cv2.imread(path)
-        if image is None:
-            raise FileNotFoundError('{0} is not found.'.format(path))
-        return image_file, image
+        self.datasets = (LSPDataset(path), LSPETDataset(path))
 
     def _pad_image(self, image, joint):
         height, width, _ = image.shape
@@ -106,11 +85,6 @@ class LSPDatasetGenerator(object):
             raise SaveImageFailed('Failed to save {0}.'.format(image_path))
         return image_path
 
-    def _get_data_label(self, dataset_name, i):
-        if dataset_name == 'lsp_dataset' and i > 1000:
-            return 'test'
-        return 'train'
-
     def _make_dataset_line(self, image_path, joint):
         joint_list = ','.join(map(str, joint.flatten()))
         # format: image_filename, x_0, y_0, v_0, x_1, ...
@@ -118,24 +92,24 @@ class LSPDatasetGenerator(object):
 
     def _generate_datasets(self):
         datasets = {'train': [], 'test': []}
-        for dataset_name in self.dataset:
-            print 'Generate dataset from {0}.'.format(dataset_name)
-            # load dataset
-            joints = self._load_joints(dataset_name)
+        for dataset in self.datasets:
+            print 'Generate dataset from {0}.'.format(dataset.name)
+            # load dataset.
+            dataset.load()
             # generate dataset
-            for i, joint in enumerate(tqdm(joints, ascii=True), 1):
-                # load image
-                image_file, image = self._load_image(dataset_name, i)
+            for index in tqdm.trange(len(dataset), ascii=True):
+                # get i-th data in the dataset.
+                label, joint, image_file, image = dataset.get_data(index)
                 # pad and crop image
                 image, joint = self._pad_image(image, joint)
                 image, joint = self._crop_image(image, joint)
                 if not self._validate(joint):
                     continue
                 # save the image
-                image_path = self._save_image(dataset_name, image_file, image)
-                # write datase
+                image_path = self._save_image(dataset.name, image_file, image)
+                # write database
                 line = self._make_dataset_line(image_path, joint)
-                datasets[self._get_data_label(dataset_name, i)].append(line)
+                datasets[label].append(line)
         return datasets
 
     def _write_datasets(self, datasets):
