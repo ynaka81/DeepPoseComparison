@@ -6,16 +6,16 @@ from nose.tools import eq_, ok_, raises
 from mock import patch
 import numpy as np
 
-from modules.errors import FileNotFoundError, SaveImageFailed
-from modules.datasets import LSPDatasetGenerator
+from modules.errors import SaveImageFailed
+from modules.datasets import DatasetGenerator
 
 
-class TestLSPDatasetGeneratorConstructure(unittest.TestCase):
+class TestDatasetGeneratorConstructure(unittest.TestCase):
 
     def _test_init(self, mock):
         output = 'test_data'
-        LSPDatasetGenerator(output=output)
-        mock.assert_called_once_with(os.path.join(output, 'images'))
+        DatasetGenerator(output=output)
+        mock.assert_any_call(os.path.join(output, 'images'))
 
     @patch('os.makedirs')
     def test_init_directory_not_exist(self, mock):
@@ -26,56 +26,31 @@ class TestLSPDatasetGeneratorConstructure(unittest.TestCase):
         self._test_init(mock)
 
 
-class TestLSPDatasetDownloader(unittest.TestCase):
+class TestDatasetDownloader(unittest.TestCase):
 
+    @patch('modules.datasets.generator.LSPETDataset')
+    @patch('modules.datasets.generator.LSPDataset')
     @patch('os.makedirs')
-    def setUp(self, mock):
+    def setUp(self, m, m_lsp, m_lspet):
+        # prepare mock.
+        joints = np.array([[[50, 80, 0], [50, 80, 1], [150, 260, 1], [150, 260, 0]],
+                           [[100, 200, 1], [100, 200, 0], [120, 280, 0], [120, 280, 1]],
+                           [[40, 10, 0], [40, 10, 1], [120, 290, 1], [120, 290, 0]]])
+        m_lsp_instance = m_lsp.return_value
+        m_lsp_instance.name = 'lsp_dataset'
+        m_lsp_instance.__len__.return_value = 2
+        lsp_joints = joints.copy()
+        lsp_joints[:, :, 2] = np.logical_not(joints[:, :, 2]).astype(int)
+        m_lsp_instance.get_data = lambda i: ('train', lsp_joints[i], 'im{0:04d}.jpg'.format(i + 1), np.zeros((300, 200, 3)))
+        m_lspet_instance = m_lspet.return_value
+        m_lspet_instance.name = 'lspet_dataset'
+        m_lspet_instance.__len__.return_value = 2
+        lspet_joints = joints.copy()
+        m_lspet_instance.get_data = lambda i: ('train', lspet_joints[i], 'im{0:05d}.jpg'.format(i + 1), np.zeros((300, 200, 3)))
+        # initialize.
         self.path = 'test_orig_data'
         self.output = 'test_data'
-        self.generator = LSPDatasetGenerator(path=self.path, output=self.output)
-
-    def tearDown(self):
-        pass
-
-    @patch('modules.datasets.generator.loadmat', return_value={'joints': np.zeros((3, 14, 10))})
-    def test_load_joints_lsp(self, mock):
-        dataset_name = 'lsp_dataset'
-        joints = self.generator._load_joints(dataset_name)
-        eq_(joints.shape, (10, 14, 3))
-        correct = np.zeros((10, 14, 3))
-        correct[:, :, 2] = 1
-        ok_((joints == correct).all())
-        mock.assert_called_once_with(os.path.join(self.path, dataset_name, 'joints.mat'))
-
-    @patch('modules.datasets.generator.loadmat', return_value={'joints': np.zeros((14, 3, 10))})
-    def test_load_joints_lspet(self, mock):
-        dataset_name = 'lspet_dataset'
-        joints = self.generator._load_joints(dataset_name)
-        eq_(joints.shape, (10, 14, 3))
-        ok_((joints == np.zeros((10, 14, 3))).all())
-        mock.assert_called_once_with(os.path.join(self.path, dataset_name, 'joints.mat'))
-
-    @patch('cv2.imread', return_value=np.zeros((320, 240)))
-    def test_load_image_lsp(self, mock):
-        dataset_name = 'lsp_dataset'
-        image_file, image = self.generator._load_image(dataset_name, 1)
-        eq_(image_file, 'im0001.jpg')
-        eq_(image.shape, (320, 240))
-        mock.assert_called_once_with(os.path.join(self.path, dataset_name, 'images', 'im0001.jpg'))
-
-    @patch('cv2.imread', return_value=np.zeros((320, 240)))
-    def test_load_image_lspet(self, mock):
-        dataset_name = 'lspet_dataset'
-        image_file, image = self.generator._load_image(dataset_name, 1)
-        eq_(image_file, 'im00001.jpg')
-        eq_(image.shape, (320, 240))
-        mock.assert_called_once_with(os.path.join(self.path, dataset_name, 'images', 'im00001.jpg'))
-
-    @raises(FileNotFoundError)
-    @patch('cv2.imread', return_value=None)
-    def test_load_image_raise_error(self, mock):
-        dataset_name = 'test_dataset'
-        image_file, image = self.generator._load_image(dataset_name, 1)
+        self.generator = DatasetGenerator(path=self.path, output=self.output)
 
     def test_pad_image(self):
         joint = np.array([[10, 20, 1], [30, 40, 1]])
@@ -189,14 +164,6 @@ class TestLSPDatasetDownloader(unittest.TestCase):
         image = np.zeros((320, 240))
         self.generator._save_image(dataset_name, image_file, image)
 
-    def test_get_data_label_lsp_train(self):
-        label = self.generator._get_data_label('lsp_dataset', 1000)
-        eq_(label, 'train')
-        label = self.generator._get_data_label('lsp_dataset', 1001)
-        eq_(label, 'test')
-        label = self.generator._get_data_label('lspet_dataset', 1)
-        eq_(label, 'train')
-
     def test_make_dataset_line(self):
         image_path = 'test_path'
         joint = np.zeros((14, 3))
@@ -205,16 +172,7 @@ class TestLSPDatasetDownloader(unittest.TestCase):
 
     @patch('cv2.imwrite', return_value=True)
     @patch('os.path.isdir', return_value=True)
-    @patch('cv2.imread', return_value=np.zeros((300, 200, 3)))
-    @patch('modules.datasets.generator.loadmat')
-    def test_generate_datasets(self, m1, m2, m3, m4):
-        # prepare mock.
-        joints = np.array([[[50, 80, 0], [50, 80, 1], [150, 260, 1], [150, 260, 0]],
-                           [[100, 200, 1], [100, 200, 0], [120, 280, 0], [120, 280, 1]],
-                           [[40, 10, 0], [40, 10, 1], [120, 290, 1], [120, 290, 0]]])
-        m1.side_effect = [{'joints': joints.transpose(2, 1, 0).copy()},
-                          {'joints': joints.transpose(1, 2, 0).copy()}]
-        # test case.
+    def test_generate_datasets(self, m1, m2):
         datasets = self.generator._generate_datasets()
         eq_(datasets['test'], [])
         train = ['{0},78,38,1,78,38,0,178,218,0,178,218,1\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),
@@ -238,22 +196,13 @@ class TestLSPDatasetDownloader(unittest.TestCase):
     @patch('modules.datasets.generator.open')
     @patch('cv2.imwrite', return_value=True)
     @patch('os.path.isdir', return_value=True)
-    @patch('cv2.imread', return_value=np.zeros((300, 200, 3)))
-    @patch('modules.datasets.generator.loadmat')
-    def test_generate(self, m1, m2, m3, m4, m5):
-        # prepare mock.
-        joints = np.array([[[50, 80, 0], [50, 80, 1], [150, 260, 1], [150, 260, 0]],
-                           [[40, 10, 0], [40, 10, 1], [120, 290, 1], [120, 290, 0]],
-                           [[100, 200, 1], [100, 200, 0], [120, 280, 0], [120, 280, 1]]])
-        m1.side_effect = [{'joints': joints.transpose(2, 1, 0).copy()},
-                          {'joints': joints.transpose(1, 2, 0).copy()}]
-        # test case.
+    def test_generate(self, m1, m2, m3):
         self.generator.generate()
-        eq_(m5.call_args_list,
+        eq_(m3.call_args_list,
             [((os.path.join(self.output, 'test'), 'w'),),
              ((os.path.join(self.output, 'train'), 'w'),)])
         train = [(('{0},78,38,1,78,38,0,178,218,0,178,218,1\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0001.jpg')),),),
-                 (('{0},128,156,0,128,156,1,148,236,1,148,236,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0003.jpg')),),),
+                 (('{0},128,156,0,128,156,1,148,236,1,148,236,0\n'.format(os.path.join(self.output, 'images', 'lsp_dataset', 'im0002.jpg')),),),
                  (('{0},78,38,0,78,38,1,178,218,1,178,218,0\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00001.jpg')),),),
-                 (('{0},128,156,1,128,156,0,148,236,0,148,236,1\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00003.jpg')),),)]
-        eq_(m5.return_value.write.call_args_list, train)
+                 (('{0},128,156,1,128,156,0,148,236,0,148,236,1\n'.format(os.path.join(self.output, 'images', 'lspet_dataset', 'im00002.jpg')),),)]
+        eq_(m3.return_value.write.call_args_list, train)

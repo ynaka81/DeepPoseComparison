@@ -35,6 +35,7 @@ class TrainLogger(object):
         """ Write log. """
         tqdm.write(log)
         tqdm.write(log, file=self.file)
+        self.file.flush()
         self.logs.append(log)
 
     def state_dict(self):
@@ -145,7 +146,7 @@ class TrainPoseNet(object):
         logger.write(log)
 
     def _checkpoint(self, epoch, model, optimizer, logger):
-        filename = os.path.join(self.out, 'pytorch', 'epoch-{0}'.format(epoch))
+        filename = os.path.join(self.out, 'pytorch', 'epoch-{0}'.format(epoch + 1))
         torch.save({'epoch': epoch + 1, 'logger': logger.state_dict()}, filename + '.iter')
         torch.save(model.state_dict(), filename + '.model')
         torch.save(optimizer.state_dict(), filename + '.state')
@@ -193,16 +194,16 @@ class TrainPoseNet(object):
         log_interval = 10
         # set logger and start epoch.
         logger = TrainLogger(os.path.join(self.out, 'pytorch'))
-        start_epoch = 1
+        start_epoch = 0
         if self.resume:
             resume = torch.load(self.resume)
             start_epoch = resume['epoch']
             logger.load_state_dict(resume['logger'])
         # start training.
         start_time = time.time()
-        for epoch in trange(start_epoch, self.epoch + 1, desc='     total'):
+        for epoch in trange(start_epoch, self.epoch, initial=start_epoch, total=self.epoch, desc='     total'):
             self._train(model, optimizer, train_iter, log_interval, logger, start_time)
-            if epoch % val_interval == 0:
+            if (epoch + 1) % val_interval == 0:
                 self._test(model, val_iter, logger, start_time)
-            if epoch % resume_interval == 0:
+            if (epoch + 1) % resume_interval == 0:
                 self._checkpoint(epoch, model, optimizer, logger)
