@@ -11,28 +11,33 @@ class TrainingTimeEvaluator(object):
     """ Evaluate training time of pose net by chainer and pytorch.
 
     Args:
-        chainer_log (str): Log file of chainer.
-        pytorch_log (str): Log file of pytorch.
+        chainer_logs (str): Log files of chainer.
+        pytorch_logs (str): Log files of pytorch.
         output (str): Output directory.
     """
 
     def __init__(self,
-                 chainer_log='result/chainer/log',
-                 pytorch_log='result/pytorch/log',
+                 chainer_logs=[],
+                 pytorch_logs=[],
                  output='result'):
         try:
             os.makedirs(output)
         except OSError:
             pass
-        self.chainer_log = chainer.TrainingLog(chainer_log)
-        self.pytorch_log = pytorch.TrainingLog(pytorch_log)
+        self.logs = {'chainer': map(lambda log: chainer.TrainingLog(log), chainer_logs),
+                     'pytorch': map(lambda log: pytorch.TrainingLog(log), pytorch_logs)}
+        self.legends = dict(map(lambda key: (key, [key]), self.logs.keys()))
+        for name, logs in zip(('chainer', 'pytorch'), (chainer_logs, pytorch_logs)):
+            if len(logs) > 1:
+                self.legends[name] = map(lambda log: '{}/{}'.format(name, os.path.basename(log)), logs)
         self.output = output
 
     def plot(self, title, debug):
         """ Plot training time of chainer and pytorch. """
         # plot training time.
-        plt.plot(self.chainer_log.t, self.chainer_log.v, label='chainer')
-        plt.plot(self.pytorch_log.t, self.pytorch_log.v, label='pytorch')
+        for name in self.logs.keys():
+            for log, legend in zip(self.logs[name], self.legends[name]):
+                plt.plot(log.t, log.v, label=legend)
         # plot settings.
         plt.title(title)
         plt.legend()
