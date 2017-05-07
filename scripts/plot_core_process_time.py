@@ -32,7 +32,7 @@ def main():
         '--pytorch-model-file', '-p', type=str,
         default='result/pytorch/epoch-100.model', help='Pytorch model parameter file.')
     parser.add_argument(
-        '--filename', '-f', type=str, default='data/test', help='Image-pose list file.')
+        '--filename', '-f', type=str, default='data/train', help='Image-pose list file.')
     parser.add_argument(
         '--output', '-o', type=str, default='result', help='Output directory.')
     parser.add_argument(
