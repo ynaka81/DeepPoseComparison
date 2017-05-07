@@ -47,7 +47,15 @@ class CoreProcess(object):
 
     def run(self, only_inference=False):
         """ Run core process. """
-        batch = self.iter.next()
+        batch_size = self.iter.batch_size
+        try:
+            batch = self.iter.next()
+            if len(batch) < batch_size:
+                batch += iter(torch.utils.data.DataLoader(self.dataset, batch_size - len(batch), shuffle=True))
+        except StopIteration:
+            # If self.iter arrive at the end of dataset, create new iter.
+            self.iter = iter(torch.utils.data.DataLoader(self.dataset, batch_size, shuffle=True))
+            batch = self.iter.next()
         in_vars = tuple(Variable(x) for x in batch)
         if self.gpu:
             map(lambda x: x.cuda(), in_vars)
