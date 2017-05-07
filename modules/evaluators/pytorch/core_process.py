@@ -59,7 +59,7 @@ class CoreProcess(object):
             batch = self.iter.next()
         in_vars = tuple(Variable(x) for x in batch)
         if self.gpu:
-            map(lambda x: x.cuda(), in_vars)
+            in_vars = map(lambda x: x.cuda(), in_vars)
         y = self.model.forward(in_vars[0])
         if only_inference:
             return
