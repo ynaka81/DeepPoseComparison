@@ -50,8 +50,9 @@ class CoreProcess(object):
         batch_size = self.iter.batch_size
         try:
             batch = self.iter.next()
-            if len(batch) < batch_size:
-                batch += iter(torch.utils.data.DataLoader(self.dataset, batch_size - len(batch), shuffle=True))
+            if len(batch[0]) < batch_size:
+                remain_batch = iter(torch.utils.data.DataLoader(self.dataset, batch_size - len(batch[0]), shuffle=True)).next()
+                batch = map(lambda x: torch.cat(x), zip(batch, remain_batch))
         except StopIteration:
             # If self.iter arrive at the end of dataset, create new iter.
             self.iter = iter(torch.utils.data.DataLoader(self.dataset, batch_size, shuffle=True))
