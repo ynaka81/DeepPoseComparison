@@ -63,7 +63,7 @@ class Dataset(object):
             path = wget.download(self.url, self.path)
             # extract the dataset.
             with zipfile.ZipFile(path, 'r') as zip_file:
-                zip_file.extractall(self._get_extract_path())
+                zip_file.extractall(os.path.splitext(path)[0])
             # remove downloaded zip file.
             os.remove(path)
 
