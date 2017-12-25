@@ -19,7 +19,7 @@ class LSPDataset(Dataset):
     def __init__(self, path='orig_data'):
         super(LSPDataset, self).__init__(
             'lsp_dataset',
-            'http://www.comp.leeds.ac.uk/mat4saj/lsp_dataset.zip', path)
+            'http://sam.johnson.io/research/lsp_dataset.zip', path)
 
     def _get_extract_path(self):
         return self.path

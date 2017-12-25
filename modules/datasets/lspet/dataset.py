@@ -18,7 +18,7 @@ class LSPETDataset(Dataset):
     def __init__(self, path='orig_data'):
         super(LSPETDataset, self).__init__(
             'lspet_dataset',
-            'http://www.comp.leeds.ac.uk/mat4saj/lspet_dataset.zip', path)
+            'http://sam.johnson.io/research/lspet_dataset.zip', path)
 
     def _get_extract_path(self):
         return os.path.join(self.path, self.name)
